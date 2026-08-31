@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
+import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
 
 class NeighborDetailPage extends StatelessWidget {
   final String neighborId;
@@ -10,6 +12,9 @@ class NeighborDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Aseguramos que las cuadrillas estén cargadas para el formulario de edición
+    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
+
     return BlocListener<NeighborsBloc, NeighborsState>(
       listener: (context, state) {
         if (state is NeighborsLoaded) {
@@ -95,12 +100,24 @@ class NeighborDetailPage extends StatelessWidget {
             leading: const Icon(Icons.phone),
             title: const Text('Teléfono'),
             subtitle: Text(neighbor.phone ?? 'Sin teléfono'),
-            trailing: neighbor.phone != null ? IconButton(
-              icon: const Icon(Icons.message, color: Colors.green),
-              onPressed: () {
-                // TODO: Link a WhatsApp
-              },
-            ) : null,
+          ),
+          const Divider(height: 1),
+          BlocBuilder<BaseSquadsBloc, BaseSquadsState>(
+            builder: (context, state) {
+              String squadName = 'Ninguna';
+              if (state is BaseSquadsLoaded && neighbor.baseSquadId != null) {
+                final squad = state.squads.cast<BaseSquadEntity?>().firstWhere(
+                  (s) => s?.id == neighbor.baseSquadId,
+                  orElse: () => null,
+                );
+                if (squad != null) squadName = squad.name;
+              }
+              return ListTile(
+                leading: const Icon(Icons.groups),
+                title: const Text('Cuadrilla Base'),
+                subtitle: Text(squadName),
+              );
+            },
           ),
           const Divider(height: 1),
           ListTile(
@@ -176,12 +193,15 @@ class NeighborDetailPage extends StatelessWidget {
 
   void _showNeighborForm(BuildContext context, {required NeighborEntity neighbor}) {
     final neighborsBloc = context.read<NeighborsBloc>();
+    final squadsState = context.read<BaseSquadsBloc>().state;
+    
     final nameController = TextEditingController(text: neighbor.fullName);
     final phoneController = TextEditingController(text: neighbor.phone);
     final notesController = TextEditingController(text: neighbor.notes);
     Gender selectedGender = neighbor.gender;
     OperationalProfile selectedProfile = neighbor.operationalProfile;
     bool isActive = neighbor.isActive;
+    String? selectedSquadId = neighbor.baseSquadId;
 
     showDialog(
       context: context,
@@ -201,6 +221,16 @@ class NeighborDetailPage extends StatelessWidget {
                   decoration: const InputDecoration(labelText: 'Teléfono'),
                   keyboardType: TextInputType.phone,
                 ),
+                if (squadsState is BaseSquadsLoaded)
+                  DropdownButtonFormField<String?>(
+                    value: selectedSquadId,
+                    decoration: const InputDecoration(labelText: 'Cuadrilla Base'),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Ninguna')),
+                      ...squadsState.squads.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
+                    ],
+                    onChanged: (v) => setState(() => selectedSquadId = v),
+                  ),
                 TextField(
                   controller: notesController,
                   decoration: const InputDecoration(labelText: 'Notas / Observaciones'),
@@ -258,6 +288,7 @@ class NeighborDetailPage extends StatelessWidget {
                     balance: neighbor.balance,
                     isActive: isActive,
                     notes: notesController.text,
+                    baseSquadId: selectedSquadId,
                   );
                   neighborsBloc.add(EditNeighbor(updatedNeighbor));
                   Navigator.pop(dialogContext);

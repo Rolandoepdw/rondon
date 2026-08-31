@@ -1,5 +1,4 @@
 import 'package:rondon/database/app_database.dart';
-import 'package:rondon/features/neighbors/data/models/neighbor_model.dart';
 
 abstract class BaseSquadLocalDataSource {
   Future<List<Map<String, dynamic>>> getAllSquads();
