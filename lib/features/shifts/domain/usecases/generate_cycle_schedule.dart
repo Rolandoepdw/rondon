@@ -107,26 +107,29 @@ class GenerateCycleSchedule implements UseCase<void, GenerateParams> {
                     }
                   }
 
-                  // 3. Cobertura de Vacantes (Deudores)
+                  // 3. Cobertura de Vacantes
                   int vacancies = template.targetQuota - assignments.length;
                   if (vacancies > 0) {
-                    final debtors = allNeighbors.where((n) {
-                      return n.balance < 0 && 
-                             !assignments.any((a) => a.neighborId == n.id) &&
-                             _passesRestPeriod(n.id, currentDate, minDays, lastShiftDates);
+                    final candidates = allNeighbors.where((n) {
+                      return !assignments.any((a) => a.neighborId == n.id) &&
+                             _passesRestPeriod(n.id, currentDate, minDays, lastShiftDates) &&
+                             _isGenderCompatible(n, template);
                     }).toList();
 
-                    // Ordenar deudores por mayor deuda (menor balance) y luego por descanso
-                    debtors.sort((a, b) {
+                    // Ordenamiento Fair-Share:
+                    // 1. Deuda (balance < 0) - Los deudores primero
+                    // 2. Mayor descanso (días desde la última guardia)
+                    // 3. Alfabético
+                    candidates.sort((a, b) {
                       if (a.balance != b.balance) return a.balance.compareTo(b.balance);
                       final dateA = lastShiftDates[a.id] ?? DateTime(2000);
                       final dateB = lastShiftDates[b.id] ?? DateTime(2000);
                       return dateA.compareTo(dateB);
                     });
 
-                    for (var debtor in debtors.take(vacancies)) {
-                      assignments.add(_createAssignment(shiftId, debtor, template, isSubstitute: true));
-                      lastShiftDates[debtor.id] = currentDate;
+                    for (var candidate in candidates.take(vacancies)) {
+                      assignments.add(_createAssignment(shiftId, candidate, template, isSubstitute: true));
+                      lastShiftDates[candidate.id] = currentDate;
                     }
                   }
 

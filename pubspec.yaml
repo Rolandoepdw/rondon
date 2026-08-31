@@ -45,10 +45,12 @@ dependencies:
   url_launcher: ^6.3.2
   flutter_local_notifications: ^22.3.0
   intl: ^0.20.3
+  table_calendar: ^3.1.2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  mocktail: ^1.0.4
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
