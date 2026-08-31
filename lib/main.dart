@@ -10,9 +10,12 @@ import 'package:rondon/core/utils/app_bloc_observer.dart';
 import 'package:rondon/injection_container.dart' as di;
 import 'package:rondon/features/shifts/presentation/pages/home_page.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbors_page.dart';
+import 'package:rondon/features/settings/presentation/pages/settings_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
+import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
+import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
 
 void main() async {
   // 1. Inicializar sqflite_ffi si estamos en desktop
@@ -42,6 +45,8 @@ class RondonApp extends StatelessWidget {
       providers: [
         BlocProvider(create: (_) => di.sl<ShiftsBloc>()..add(LoadTodayShifts())),
         BlocProvider(create: (_) => di.sl<NeighborsBloc>()..add(LoadNeighbors())),
+        BlocProvider(create: (_) => di.sl<ShiftTemplatesBloc>()),
+        BlocProvider(create: (_) => di.sl<BaseSquadsBloc>()),
       ],
       child: MaterialApp(
         title: 'Rondon',
@@ -90,7 +95,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           HomePage(),
           Center(child: Text('Calendario (Próximamente)')),
           NeighborsPage(),
-          Center(child: Text('Ajustes (Próximamente)')),
+          SettingsPage(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
