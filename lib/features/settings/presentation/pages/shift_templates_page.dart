@@ -4,18 +4,24 @@ import 'package:rondon/features/shifts/domain/entities/shift_template.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
 import 'package:uuid/uuid.dart';
 
-class ShiftTemplatesPage extends StatelessWidget {
+class ShiftTemplatesPage extends StatefulWidget {
   const ShiftTemplatesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    // Aseguramos que se carguen las plantillas al entrar
-    context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
+  State<ShiftTemplatesPage> createState() => _ShiftTemplatesPageState();
+}
 
+class _ShiftTemplatesPageState extends State<ShiftTemplatesPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Cargamos las plantillas solo una vez al iniciar la vista
+    context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Plantillas de Turno'),
-      ),
       body: BlocBuilder<ShiftTemplatesBloc, ShiftTemplatesState>(
         builder: (context, state) {
           if (state is ShiftTemplatesLoading) {
@@ -38,7 +44,7 @@ class ShiftTemplatesPage extends StatelessWidget {
   Widget _buildList(BuildContext context, List<ShiftTemplateEntity> templates) {
     if (templates.isEmpty) {
       return const Center(
-        child: Text('No hay plantillas configuradas.\nAgregue una para empezar la planificación.'),
+        child: Text('No hay plantillas configuradas.\nAgregue una para empezar la planificación.', textAlign: TextAlign.center),
       );
     }
 

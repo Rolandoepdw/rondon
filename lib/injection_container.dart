@@ -36,11 +36,16 @@ import 'package:rondon/features/neighbors/domain/usecases/update_base_squad.dart
 import 'package:rondon/features/neighbors/domain/usecases/delete_base_squad.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
 
+import 'package:rondon/features/shifts/domain/usecases/generate_cycle_schedule.dart';
+
 final sl = GetIt.instance;
 
 Future<void> init() async {
   //! Presentation
-  sl.registerFactory(() => ShiftsBloc(repository: sl()));
+  sl.registerFactory(() => ShiftsBloc(
+        repository: sl(),
+        generateCycleSchedule: sl(),
+      ));
   sl.registerFactory(() => NeighborsBloc(
         getAllNeighbors: sl(),
         createNeighbor: sl(),
@@ -99,6 +104,13 @@ Future<void> init() async {
   sl.registerLazySingleton(() => CreateShiftTemplate(sl()));
   sl.registerLazySingleton(() => UpdateShiftTemplate(sl()));
   sl.registerLazySingleton(() => DeleteShiftTemplate(sl()));
+  sl.registerLazySingleton(() => GenerateCycleSchedule(
+        neighborRepository: sl(),
+        squadRepository: sl(),
+        templateRepository: sl(),
+        shiftRepository: sl(),
+        settingsRepository: sl(),
+      ));
 
   // Repository
   sl.registerLazySingleton<IShiftRepository>(

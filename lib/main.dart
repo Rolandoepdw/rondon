@@ -10,6 +10,7 @@ import 'package:rondon/core/utils/app_bloc_observer.dart';
 import 'package:rondon/injection_container.dart' as di;
 import 'package:rondon/features/shifts/presentation/pages/home_page.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbors_page.dart';
+import 'package:rondon/features/shifts/presentation/pages/calendar_page.dart';
 import 'package:rondon/features/settings/presentation/pages/settings_page.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
@@ -93,7 +94,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         index: _currentIndex,
         children: const [
           HomePage(),
-          Center(child: Text('Calendario (Próximamente)')),
+          CalendarPage(),
           NeighborsPage(),
           SettingsPage(),
         ],
@@ -119,7 +120,7 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
           NavigationDestination(
             icon: Icon(Icons.people_outline),
             selectedIcon: Icon(Icons.people),
-            label: 'Vecinos',
+            label: 'Comunidad',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),

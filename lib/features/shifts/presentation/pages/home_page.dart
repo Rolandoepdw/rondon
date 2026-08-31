@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
 import 'package:intl/intl.dart';
 
@@ -8,29 +9,54 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('🛡️ RONDON'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              context.read<ShiftsBloc>().add(LoadTodayShifts());
-            },
-          ),
-        ],
-      ),
-      body: BlocBuilder<ShiftsBloc, ShiftsState>(
-        builder: (context, state) {
-          if (state is ShiftsLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is ShiftsLoaded) {
-            return _buildDashboard(context, state);
-          } else if (state is ShiftsError) {
-            return Center(child: Text('Error: ${state.message}'));
-          }
-          return const Center(child: Text('Inicia el día planificando.'));
-        },
+    return BlocListener<ShiftsBloc, ShiftsState>(
+      listener: (context, state) {
+        if (state is ShiftsSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.green),
+          );
+        } else if (state is ShiftsError) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+          );
+        }
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('🛡️ RONDON'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: () {
+                context.read<ShiftsBloc>().add(LoadTodayShifts());
+              },
+            ),
+          ],
+        ),
+        body: BlocBuilder<ShiftsBloc, ShiftsState>(
+          builder: (context, state) {
+            if (state is ShiftsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            } else if (state is ShiftsLoaded) {
+              return _buildDashboard(context, state);
+            } else if (state is ShiftsError) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Error: ${state.message}'),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.read<ShiftsBloc>().add(LoadTodayShifts()),
+                      child: const Text('Reintentar'),
+                    ),
+                  ],
+                ),
+              );
+            }
+            return const Center(child: Text('Inicia el día planificando.'));
+          },
+        ),
       ),
     );
   }
@@ -41,11 +67,22 @@ class HomePage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        Text(
-          '📅 HOY: $dateStr',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '📅 HOY: $dateStr',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+            ),
+            if (state.shifts.isEmpty)
+              TextButton.icon(
+                onPressed: () => _showGenerateDialog(context),
+                icon: const Icon(Icons.add_chart),
+                label: const Text('Planificar'),
               ),
+          ],
         ),
         const SizedBox(height: 16),
         if (state.shifts.isEmpty)
@@ -71,13 +108,69 @@ class HomePage extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: () {
-                // TODO: Navegar a calendario
-              },
+              onPressed: () => _showGenerateDialog(context),
               child: const Text('Generar Planificación'),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showGenerateDialog(BuildContext context) {
+    final bloc = context.read<ShiftsBloc>();
+    DateTime startDate = DateTime.now();
+    DateTime endDate = DateTime.now().add(const Duration(days: 30));
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Generar Planificación'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Se generarán los turnos automáticamente basados en las plantillas y rotación de cuadrillas.'),
+            const SizedBox(height: 16),
+            ListTile(
+              title: const Text('Desde'),
+              subtitle: Text(DateFormat('yyyy-MM-dd').format(startDate)),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: startDate,
+                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) startDate = picked;
+              },
+            ),
+            ListTile(
+              title: const Text('Hasta'),
+              subtitle: Text(DateFormat('yyyy-MM-dd').format(endDate)),
+              trailing: const Icon(Icons.calendar_month),
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: context,
+                  initialDate: endDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) endDate = picked;
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
+          FilledButton(
+            onPressed: () {
+              bloc.add(GenerateShiftsRange(startDate: startDate, endDate: endDate));
+              Navigator.pop(dialogContext);
+            },
+            child: const Text('Generar'),
+          ),
+        ],
       ),
     );
   }
@@ -111,6 +204,21 @@ class _ShiftCard extends StatelessWidget {
             Text('⏰ ${shift.template?.startTime} - ${shift.template?.endTime}'),
             const SizedBox(height: 8),
             const Text('👥 Participantes:', style: TextStyle(fontWeight: FontWeight.w500)),
+            const SizedBox(height: 4),
+            ...shift.assignments.map((a) => Padding(
+              padding: const EdgeInsets.only(left: 8.0, bottom: 2.0),
+              child: Row(
+                children: [
+                  Icon(
+                    a.neighbor?.operationalProfile == OperationalProfile.activo ? Icons.bolt : Icons.accessibility_new,
+                    size: 14,
+                    color: a.neighbor?.operationalProfile == OperationalProfile.activo ? Colors.orange : Colors.grey,
+                  ),
+                  const SizedBox(width: 4),
+                  Text('${a.neighbor?.fullName ?? 'Desconocido'} (${a.isSubstitute ? 'Refuerzo' : 'Titular'})'),
+                ],
+              ),
+            )).toList(),
             const SizedBox(height: 12),
             Row(
               children: [
