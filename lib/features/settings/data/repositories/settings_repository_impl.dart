@@ -57,4 +57,50 @@ class SettingsRepositoryImpl implements ISettingsRepository {
       return Left(DatabaseFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, String>> getMorningNotificationTime() async {
+    try {
+      final db = await appDatabase.database;
+      final result = await db.query('app_settings', where: 'key = ?', whereArgs: ['notification_time_morning']);
+      if (result.isNotEmpty) return Right(result.first['value'] as String);
+      return const Right('08:00');
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setMorningNotificationTime(String time) async {
+    try {
+      final db = await appDatabase.database;
+      await db.update('app_settings', {'value': time}, where: 'key = ?', whereArgs: ['notification_time_morning']);
+      return const Right(null);
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, String>> getEveningNotificationTime() async {
+    try {
+      final db = await appDatabase.database;
+      final result = await db.query('app_settings', where: 'key = ?', whereArgs: ['notification_time_evening']);
+      if (result.isNotEmpty) return Right(result.first['value'] as String);
+      return const Right('20:00');
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> setEveningNotificationTime(String time) async {
+    try {
+      final db = await appDatabase.database;
+      await db.update('app_settings', {'value': time}, where: 'key = ?', whereArgs: ['notification_time_evening']);
+      return const Right(null);
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
 }

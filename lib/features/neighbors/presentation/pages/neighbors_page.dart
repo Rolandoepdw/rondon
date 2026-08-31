@@ -2,25 +2,43 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
+import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
 import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbor_detail_page.dart';
+import 'package:rondon/features/settings/presentation/pages/shift_templates_page.dart';
 import 'package:uuid/uuid.dart';
 
-class NeighborsPage extends StatelessWidget {
+class NeighborsPage extends StatefulWidget {
   const NeighborsPage({super.key});
+
+  @override
+  State<NeighborsPage> createState() => _NeighborsPageState();
+}
+
+class _NeighborsPageState extends State<NeighborsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Cargamos todos los datos iniciales de esta sección
+    context.read<NeighborsBloc>().add(LoadNeighbors());
+    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
+    context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
+  }
 
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Comunidad'),
+          title: const Text('Comunidad y Turnos'),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(icon: Icon(Icons.person), text: 'Vecinos'),
               Tab(icon: Icon(Icons.groups), text: 'Cuadrillas'),
+              Tab(icon: Icon(Icons.access_time), text: 'Plantillas'),
             ],
           ),
         ),
@@ -28,6 +46,7 @@ class NeighborsPage extends StatelessWidget {
           children: [
             _NeighborsListTab(),
             _BaseSquadsListTab(),
+            ShiftTemplatesPage(),
           ],
         ),
       ),
@@ -207,8 +226,6 @@ class _BaseSquadsListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
-    
     return BlocBuilder<BaseSquadsBloc, BaseSquadsState>(
       builder: (context, state) {
         if (state is BaseSquadsLoading) {
@@ -250,6 +267,14 @@ class _BaseSquadsListTab extends StatelessWidget {
                       dense: true,
                       leading: const Icon(Icons.person_outline, size: 16),
                       title: Text(m.fullName),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NeighborDetailPage(neighborId: m.id),
+                          ),
+                        );
+                      },
                     )).toList(),
                   ),
                 );
