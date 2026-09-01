@@ -37,14 +37,28 @@ import 'package:rondon/features/neighbors/domain/usecases/delete_base_squad.dart
 import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
 
 import 'package:rondon/features/shifts/domain/usecases/generate_cycle_schedule.dart';
+import 'package:rondon/features/shifts/domain/usecases/audit_shift_attendance.dart';
+import 'package:rondon/features/shifts/domain/usecases/execute_substitution.dart';
+
+import 'package:rondon/features/messaging/domain/usecases/build_reminder_message.dart';
+import 'package:rondon/core/services/whatsapp_service.dart';
+import 'package:rondon/core/services/notification_service.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  //! Features - Messaging
+  sl.registerLazySingleton(() => BuildReminderMessage());
+  sl.registerLazySingleton(() => WhatsAppService());
+  sl.registerLazySingleton(() => NotificationService());
+
   //! Presentation
   sl.registerFactory(() => ShiftsBloc(
         repository: sl(),
         generateCycleSchedule: sl(),
+        auditShiftAttendance: sl(),
+        executeSubstitution: sl(),
+        getReplacementCandidates: sl(),
       ));
   sl.registerFactory(() => NeighborsBloc(
         getAllNeighbors: sl(),
@@ -111,6 +125,8 @@ Future<void> init() async {
         shiftRepository: sl(),
         settingsRepository: sl(),
       ));
+  sl.registerLazySingleton(() => AuditShiftAttendance(sl()));
+  sl.registerLazySingleton(() => ExecuteSubstitution(sl()));
 
   // Repository
   sl.registerLazySingleton<IShiftRepository>(

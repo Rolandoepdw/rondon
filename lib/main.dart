@@ -12,6 +12,7 @@ import 'package:rondon/features/shifts/presentation/pages/home_page.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbors_page.dart';
 import 'package:rondon/features/shifts/presentation/pages/calendar_page.dart';
 import 'package:rondon/features/settings/presentation/pages/settings_page.dart';
+import 'package:rondon/core/services/notification_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
@@ -31,6 +32,9 @@ void main() async {
 
   await initializeDateFormatting('es_ES', null);
   await di.init();
+
+  // Inicializar notificaciones
+  await di.sl<NotificationService>().init();
 
   Bloc.observer = AppBlocObserver();
 

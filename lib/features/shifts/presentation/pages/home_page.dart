@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/shifts/domain/entities/scheduled_shift.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
+import 'package:rondon/core/services/whatsapp_service.dart';
+import 'package:rondon/features/messaging/domain/usecases/build_reminder_message.dart';
+import 'package:rondon/injection_container.dart';
+import 'package:rondon/features/shifts/presentation/pages/audit_shift_page.dart';
+import 'package:rondon/features/shifts/presentation/widgets/replacement_bottom_sheet.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatelessWidget {
@@ -67,6 +73,8 @@ class HomePage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
+        if (state.pendingAuditShifts.isNotEmpty)
+          _buildPendingAuditBanner(context, state.pendingAuditShifts),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -76,7 +84,7 @@ class HomePage extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            if (state.shifts.isEmpty)
+            if (state.todayShifts.isEmpty)
               TextButton.icon(
                 onPressed: () => _showGenerateDialog(context),
                 icon: const Icon(Icons.add_chart),
@@ -85,11 +93,30 @@ class HomePage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        if (state.shifts.isEmpty)
+        if (state.todayShifts.isEmpty)
           _buildEmptyState(context)
         else
-          ...state.shifts.map((shift) => _ShiftCard(shift: shift)),
+          ...state.todayShifts.map((shift) => _ShiftCard(shift: shift)),
       ],
+    );
+  }
+
+  Widget _buildPendingAuditBanner(BuildContext context, List<ScheduledShiftEntity> pending) {
+    return Card(
+      color: Colors.orange.shade50,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: ListTile(
+        leading: const Icon(Icons.warning_amber_rounded, color: Colors.orange),
+        title: const Text('Auditoría Pendiente', style: TextStyle(fontWeight: FontWeight.bold)),
+        subtitle: Text('Hay ${pending.length} guardias de anoche sin cerrar.'),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 14),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => AuditShiftPage(shift: pending.first)),
+          );
+        },
+      ),
     );
   }
 
@@ -124,60 +151,62 @@ class HomePage extends StatelessWidget {
 
     showDialog(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Generar Planificación'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Se generarán los turnos automáticamente basados en las plantillas y rotación de cuadrillas.'),
-            const SizedBox(height: 16),
-            ListTile(
-              title: const Text('Desde'),
-              subtitle: Text(DateFormat('yyyy-MM-dd').format(startDate)),
-              trailing: const Icon(Icons.calendar_month),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: startDate,
-                  firstDate: DateTime.now().subtract(const Duration(days: 365)),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) startDate = picked;
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Generar Planificación'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Se generarán los turnos automáticamente basados en las plantillas y rotación de cuadrillas.'),
+              const SizedBox(height: 16),
+              ListTile(
+                title: const Text('Desde'),
+                subtitle: Text(DateFormat('yyyy-MM-dd').format(startDate)),
+                trailing: const Icon(Icons.calendar_month),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: startDate,
+                    firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setDialogState(() => startDate = picked);
+                },
+              ),
+              ListTile(
+                title: const Text('Hasta'),
+                subtitle: Text(DateFormat('yyyy-MM-dd').format(endDate)),
+                trailing: const Icon(Icons.calendar_month),
+                onTap: () async {
+                  final picked = await showDatePicker(
+                    context: context,
+                    initialDate: endDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (picked != null) setDialogState(() => endDate = picked);
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+            FilledButton(
+              onPressed: () {
+                bloc.add(GenerateShiftsRange(startDate: startDate, endDate: endDate));
+                Navigator.pop(context);
               },
-            ),
-            ListTile(
-              title: const Text('Hasta'),
-              subtitle: Text(DateFormat('yyyy-MM-dd').format(endDate)),
-              trailing: const Icon(Icons.calendar_month),
-              onTap: () async {
-                final picked = await showDatePicker(
-                  context: context,
-                  initialDate: endDate,
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365)),
-                );
-                if (picked != null) endDate = picked;
-              },
+              child: const Text('Generar'),
             ),
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              bloc.add(GenerateShiftsRange(startDate: startDate, endDate: endDate));
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Generar'),
-          ),
-        ],
       ),
     );
   }
 }
 
 class _ShiftCard extends StatelessWidget {
-  final dynamic shift;
+  final ScheduledShiftEntity shift;
 
   const _ShiftCard({required this.shift});
 
@@ -210,12 +239,34 @@ class _ShiftCard extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    a.neighbor?.operationalProfile == OperationalProfile.activo ? Icons.bolt : Icons.accessibility_new,
+                    a.effectiveOperationalProfile == OperationalProfile.activo ? Icons.bolt : Icons.accessibility_new,
                     size: 14,
-                    color: a.neighbor?.operationalProfile == OperationalProfile.activo ? Colors.orange : Colors.grey,
+                    color: a.effectiveOperationalProfile == OperationalProfile.activo ? Colors.orange : Colors.grey,
                   ),
                   const SizedBox(width: 4),
-                  Text('${a.neighbor?.fullName ?? 'Desconocido'} (${a.isSubstitute ? 'Refuerzo' : 'Titular'})'),
+                  Expanded(
+                    child: Text('${a.neighbor?.fullName ?? 'Desconocido'} (${a.isSubstitute ? 'Refuerzo' : 'Titular'})'),
+                  ),
+                  if (shift.status != ShiftStatus.auditado)
+                    IconButton(
+                      icon: const Icon(Icons.person_remove_outlined, size: 16, color: Colors.orange),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          builder: (_) => BlocProvider.value(
+                            value: context.read<ShiftsBloc>(),
+                            child: ReplacementBottomSheet(
+                              shiftId: shift.id,
+                              originalNeighbor: a.neighbor!,
+                            ),
+                          ),
+                        );
+                      },
+                      tooltip: 'Reemplazar',
+                      constraints: const BoxConstraints(),
+                      padding: const EdgeInsets.all(4),
+                    ),
                 ],
               ),
             )).toList(),
@@ -224,19 +275,29 @@ class _ShiftCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: () {},
+                    onPressed: () => _showWhatsAppMenu(context),
                     icon: const Icon(Icons.message, size: 18),
                     label: const Text('WhatsApp'),
                   ),
                 ),
                 const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {},
-                    icon: const Icon(Icons.edit, size: 18),
-                    label: const Text('Gestionar'),
+                if (shift.status != ShiftStatus.auditado)
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => AuditShiftPage(shift: shift)),
+                        );
+                      },
+                      icon: const Icon(Icons.check_circle_outline, size: 18),
+                      label: const Text('Auditar'),
+                    ),
                   ),
-                ),
+                if (shift.status == ShiftStatus.auditado)
+                  const Expanded(
+                    child: Center(child: Text('✅ Auditado', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold))),
+                  ),
               ],
             ),
           ],
@@ -245,11 +306,47 @@ class _ShiftCard extends StatelessWidget {
     );
   }
 
-  Widget _buildStatusChip(dynamic status) {
+  Widget _buildStatusChip(ShiftStatus status) {
     return Chip(
       label: Text(status.value, style: const TextStyle(fontSize: 10)),
       backgroundColor: Colors.blue.shade50,
       visualDensity: VisualDensity.compact,
+    );
+  }
+
+  void _showWhatsAppMenu(BuildContext context) {
+    final builder = sl<BuildReminderMessage>();
+    final service = sl<WhatsAppService>();
+
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.group, color: Colors.green),
+            title: const Text('Enviar resumen al grupo'),
+            onTap: () {
+              Navigator.pop(ctx);
+              final msg = builder.buildBroadcast(shift);
+              service.sendBroadcastMessage(msg);
+            },
+          ),
+          const Divider(),
+          ...shift.assignments.map((a) => ListTile(
+            leading: const Icon(Icons.person),
+            title: Text('Notificar a ${a.neighbor?.fullName}'),
+            subtitle: Text(a.neighbor?.phone ?? 'Sin teléfono'),
+            enabled: a.neighbor?.phone != null,
+            onTap: () {
+              Navigator.pop(ctx);
+              final msg = builder(shift, a);
+              service.sendIndividualMessage(a.neighbor!.phone!, msg);
+            },
+          )),
+          const SizedBox(height: 16),
+        ],
+      ),
     );
   }
 }

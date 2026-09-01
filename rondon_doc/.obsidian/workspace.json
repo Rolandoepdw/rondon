@@ -11,10 +11,14 @@
             "id": "ee879079802c2445",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "01_SYSTEM_OVERVIEW_AND_DOMAIN_RULES.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "01_SYSTEM_OVERVIEW_AND_DOMAIN_RULES"
             }
           }
         ]
@@ -176,16 +180,19 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "docx-exporter:Export current note to DOCX": false
     }
   },
   "active": "ee879079802c2445",
   "lastOpenFiles": [
-    "06_CLEAN_ARCHITECTURE_STRUCTURING.md",
+    "04_ADMIN_INTERFACE_AND_UX_FLOWS.md",
+    "04_ADMIN_INTERFACE_AND_UX_FLOWS.docx",
+    "05_COMMUNICATION_AND_NOTIFICATION_ENGINE.md",
     "03_BUSINESS_LOGIC_AND_ALGORITHMS.md",
+    "06_CLEAN_ARCHITECTURE_STRUCTURING.md",
     "02_DATA_MODEL_AND_SQLITE_SCHEMA.md",
     "01_SYSTEM_OVERVIEW_AND_DOMAIN_RULES.md",
-    "05_COMMUNICATION_AND_NOTIFICATION_ENGINE.md",
     "02_DATA_MODEL_AND_SQLITE_SCHEMA.md~"
   ]
 }

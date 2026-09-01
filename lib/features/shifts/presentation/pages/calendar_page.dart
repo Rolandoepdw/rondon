@@ -43,7 +43,7 @@ class _CalendarPageState extends State<CalendarPage> {
         builder: (context, state) {
           List<ScheduledShiftEntity> shifts = [];
           if (state is ShiftsLoaded) {
-            shifts = state.shifts;
+            shifts = state.todayShifts;
           }
 
           return Column(
