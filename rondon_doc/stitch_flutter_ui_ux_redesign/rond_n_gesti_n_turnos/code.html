@@ -1,0 +1,279 @@
+<!DOCTYPE html><html class="dark" lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Rondón - Gestión de Turnos</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "tertiary-fixed-dim": "#aec6ff",
+                      "on-tertiary-container": "#91b4ff",
+                      "on-secondary-container": "#97b8ff",
+                      "on-error-container": "#ffdad6",
+                      "surface-container-low": "#0e1c2c",
+                      "on-secondary-fixed": "#001a42",
+                      "error": "#ffb4ab",
+                      "secondary": "#aec6ff",
+                      "on-tertiary": "#002e6a",
+                      "on-error": "#690005",
+                      "tertiary-fixed": "#d8e2ff",
+                      "surface-container-lowest": "#020f1e",
+                      "error-container": "#93000a",
+                      "inverse-surface": "#d5e4f9",
+                      "surface-dim": "#061423",
+                      "secondary-container": "#074698",
+                      "surface-container-high": "#1d2b3b",
+                      "on-background": "#d5e4f9",
+                      "surface-container": "#132030",
+                      "background": "#061423",
+                      "surface-variant": "#283646",
+                      "on-surface": "#d5e4f9",
+                      "primary-fixed": "#d8e2ff",
+                      "on-surface-variant": "#c3c6d3",
+                      "on-tertiary-fixed-variant": "#014395",
+                      "surface-tint": "#aec6ff",
+                      "on-secondary-fixed-variant": "#014395",
+                      "primary-fixed-dim": "#aec6ff",
+                      "surface-bright": "#2d3a4b",
+                      "secondary-fixed": "#d8e2ff",
+                      "on-primary": "#002e6a",
+                      "secondary-fixed-dim": "#aec6ff",
+                      "on-primary-container": "#91b4ff",
+                      "outline": "#8d909d",
+                      "tertiary": "#aec6ff",
+                      "on-primary-fixed-variant": "#014395",
+                      "outline-variant": "#434751",
+                      "tertiary-container": "#004395",
+                      "on-primary-fixed": "#001a42",
+                      "on-tertiary-fixed": "#001a42",
+                      "surface-container-highest": "#283646",
+                      "inverse-primary": "#2b5caf",
+                      "surface": "#061423",
+                      "on-secondary": "#002e6a",
+                      "primary": "#aec6ff",
+                      "inverse-on-surface": "#243142",
+                      "primary-container": "#004395"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {},
+              "fontFamily": {
+                      "headline": [
+                              "Inter"
+                      ],
+                      "display": [
+                              "Inter"
+                      ],
+                      "body": [
+                              "Inter"
+                      ],
+                      "label": [
+                              "Inter"
+                      ]
+              },
+              "fontSize": {}
+      },
+          },
+        }
+    </script>
+<style>
+        body {
+            background-color: #061423;
+            color: #d5e4f9;
+        }
+        /* Custom scrollbar for dark mode */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020f1e;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1d2b3b;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #283646;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body min-h-screen pb-24 md:pb-0 md:pl-72 flex flex-col antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline text-headline-lg font-bold fixed top-0 w-full md:w-[calc(100%-18rem)] md:ml-72 border-b border-outline-variant/30 flat no shadows text-on-surface dark:text-on-surface text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-highest/20 transition-colors active:scale-95 duration-150 flex justify-between items-center px-4 py-3 w-full z-50">
+<div class="flex items-center gap-4">
+<button class="md:hidden p-2 rounded-full hover:bg-surface-container-highest/20 transition-colors active:scale-95 duration-150">
+
+</button>
+<span class="material-symbols-outlined text-primary" data-icon="security">security</span>
+<span class="text-title-md font-bold tracking-widest text-primary dark:text-primary">RONDÓN</span>
+</div>
+<button class="p-2 rounded-full hover:bg-surface-container-highest/20 transition-colors active:scale-95 duration-150">
+<span class="material-symbols-outlined text-primary" data-icon="notifications">notifications</span>
+</button>
+</header>
+<!-- NavigationDrawer (Hidden on mobile, visible on md+) -->
+<nav class="hidden md:flex bg-surface-container dark:bg-surface-container text-primary dark:text-primary font-body text-body-lg text-headline-lg font-semibold text-on-surface rounded-r-xl h-full w-72 bg-surface-container-low dark:bg-surface-container-low shadow-xl dark:shadow-none bg-secondary-container dark:bg-secondary-container text-on-secondary-container font-semibold rounded-full mx-2 px-4 py-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-variant/50 rounded-full transition-all duration-200 ease-in-out fixed left-0 top-0 h-full z-40 flex-col">
+<div class="px-6 py-6 mb-4">
+<span class="text-headline-lg font-semibold text-on-surface tracking-wider">Gestión</span>
+</div>
+<div class="flex flex-col gap-2 flex-grow overflow-y-auto px-2">
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-variant/50 rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="group">group</span>
+<span class="">Vecinos</span>
+</a>
+<a class="flex items-center gap-3 text-on-surface-variant dark:text-on-surface-variant px-4 py-3 mx-2 hover:bg-surface-variant/50 rounded-full transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="hub">hub</span>
+<span class="">Grupos</span>
+</a>
+<a class="flex items-center gap-3 bg-secondary-container dark:bg-secondary-container text-on-secondary-container font-semibold rounded-full mx-2 px-4 py-3 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined" data-icon="event_repeat" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">event_repeat</span>
+<span class="">Turnos</span>
+</a>
+</div>
+</nav>
+<!-- Sub-navigation Tabs (Mobile mainly, or below TopAppBar) -->
+<div class="md:hidden fixed top-[60px] w-full bg-surface-container z-40 border-b border-outline-variant/30 flex overflow-x-auto hide-scrollbar">
+<a class="px-6 py-4 text-body-sm font-semibold text-on-surface-variant whitespace-nowrap border-b-2 border-transparent" href="#">Vecinos</a>
+<a class="px-6 py-4 text-body-sm font-semibold text-on-surface-variant whitespace-nowrap border-b-2 border-transparent" href="#">Grupos</a>
+<a class="px-6 py-4 text-body-sm font-semibold text-primary whitespace-nowrap border-b-2 border-primary" href="#">Turnos</a>
+</div>
+<!-- Main Content Area -->
+<main class="flex-grow pt-[120px] md:pt-[80px] p-4 md:p-8 w-full max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-8">
+<div>
+<h1 class="font-headline text-headline-lg font-semibold text-on-surface mb-2">Plantillas de Turno</h1>
+<p class="text-body-sm text-on-surface-variant">Configura los horarios recurrentes para las rondas de seguridad.</p>
+</div>
+<!-- FAB (Web inline version) -->
+<button class="hidden md:flex items-center gap-2 bg-primary-container hover:bg-primary transition-colors text-on-primary-container px-4 py-2 rounded-lg shadow-lg active:scale-95 duration-150">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+<span class="font-label text-label-caps tracking-wider">NUEVA PLANTILLA</span>
+</button>
+</div>
+<!-- Shift Templates Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Template Card 1 -->
+<div class="bg-surface-container rounded-lg border border-outline-variant p-6 hover:border-primary/50 transition-colors relative group">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-title-md font-semibold text-on-surface">Ronda Nocturna</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="space-y-4 mb-6">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="schedule">schedule</span>
+<span class="text-body-lg">22:00 - 02:00</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="groups">groups</span>
+<span class="text-body-sm">Cupo Objetivo: <strong class="text-on-surface">3 personas</strong></span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="wc">wc</span>
+<span class="text-body-sm">Género: <strong class="text-on-surface">Mixto</strong></span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">ACTIVA</span>
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">LUN-VIE</span>
+</div>
+</div>
+<!-- Template Card 2 -->
+<div class="bg-surface-container rounded-lg border border-outline-variant p-6 hover:border-primary/50 transition-colors relative group">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-title-md font-semibold text-on-surface">Ronda Madrugada</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="space-y-4 mb-6">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="schedule">schedule</span>
+<span class="text-body-lg">02:00 - 06:00</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="groups">groups</span>
+<span class="text-body-sm">Cupo Objetivo: <strong class="text-on-surface">4 personas</strong></span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="man">man</span>
+<span class="text-body-sm">Género: <strong class="text-on-surface">Solo Hombres</strong></span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">ACTIVA</span>
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">LUN-DOM</span>
+</div>
+</div>
+<!-- Template Card 3 -->
+<div class="bg-surface-container rounded-lg border border-outline-variant p-6 hover:border-primary/50 transition-colors relative group opacity-60">
+<div class="flex justify-between items-start mb-4">
+<h3 class="text-title-md font-semibold text-on-surface">Ronda Vespertina</h3>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<div class="space-y-4 mb-6">
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="schedule">schedule</span>
+<span class="text-body-lg">18:00 - 22:00</span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="groups">groups</span>
+<span class="text-body-sm">Cupo Objetivo: <strong class="text-on-surface">2 personas</strong></span>
+</div>
+<div class="flex items-center gap-3 text-on-surface-variant">
+<span class="material-symbols-outlined text-primary/80" data-icon="wc">wc</span>
+<span class="text-body-sm">Género: <strong class="text-on-surface">Mixto</strong></span>
+</div>
+</div>
+<div class="flex gap-2">
+<span class="bg-surface-container-lowest text-on-surface-variant px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">INACTIVA</span>
+<span class="bg-surface-container-high text-on-surface px-3 py-1 rounded-sm text-label-caps border border-outline-variant/30">SAB-DOM</span>
+</div>
+</div>
+</div>
+</main>
+<!-- FAB Mobile -->
+<button class="md:hidden fixed bottom-24 right-6 bg-primary-container text-on-primary-container w-14 h-14 rounded-xl shadow-[0px_12px_32px_rgba(0,0,0,0.6)] flex items-center justify-center active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="md:hidden bg-surface-container dark:bg-surface-container text-primary dark:text-primary font-label text-label-caps hidden fixed bottom-0 w-full border-t border-outline-variant/20 flat no shadows flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container rounded-xl px-4 py-1 flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors active:scale-90 duration-100 fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-2 pb-safe bg-surface-container-low">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="home_shield">home_filled</span>
+<span class="font-label text-label-caps">Inicio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="calendar_month">calendar_month</span>
+<span class="font-label text-label-caps">Calendario</span>
+</a>
+<!-- Active Tab: Gestión -->
+<a class="flex flex-col items-center justify-center bg-primary-container dark:bg-primary-container text-on-primary-container rounded-xl px-4 py-1 active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="dashboard_customize" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">dashboard_customize</span>
+<span class="font-label text-label-caps">Gestión</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant px-4 py-1 hover:text-on-surface transition-colors active:scale-90 duration-100" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="settings">settings</span>
+<span class="font-label text-label-caps">Ajustes</span>
+</a>
+</nav>
+<style>
+        .pb-safe { padding-bottom: env(safe-area-inset-bottom, 1rem); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+
+
+</body></html>

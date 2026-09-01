@@ -73,11 +73,13 @@ class ShiftRepositoryImpl implements IShiftRepository {
   Future<Either<Failure, void>> auditShiftAttendance({
     required String shiftId,
     required Map<String, AttendanceStatus> attendanceMap,
+    String? notes,
   }) async {
     try {
       await localDataSource.auditShiftAttendance(
         shiftId: shiftId,
         attendanceMap: attendanceMap,
+        notes: notes,
       );
       return const Right(null);
     } catch (e) {

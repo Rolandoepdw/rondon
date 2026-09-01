@@ -38,9 +38,10 @@ class GenerateShiftsRange extends ShiftsEvent {
 class AuditShift extends ShiftsEvent {
   final String shiftId;
   final Map<String, AttendanceStatus> attendanceMap;
-  const AuditShift({required this.shiftId, required this.attendanceMap});
+  final String? notes;
+  const AuditShift({required this.shiftId, required this.attendanceMap, this.notes});
   @override
-  List<Object> get props => [shiftId, attendanceMap];
+  List<Object?> get props => [shiftId, attendanceMap, notes];
 }
 
 class PerformSubstitution extends ShiftsEvent {
@@ -128,18 +129,19 @@ class ShiftsBloc extends Bloc<ShiftsEvent, ShiftsState> {
       emit(ShiftsLoading());
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
+      final farPast = DateTime(2000);
       final yesterday = today.subtract(const Duration(days: 1));
       
       final todayResult = await repository.getShiftsByDateRange(today, today);
-      final yesterdayResult = await repository.getShiftsByDateRange(yesterday, yesterday);
+      final pastResult = await repository.getShiftsByDateRange(farPast, yesterday);
       
       todayResult.fold(
         (failure) => emit(ShiftsError(failure.message)),
         (todayShifts) {
-          yesterdayResult.fold(
+          pastResult.fold(
             (_) => emit(ShiftsLoaded(todayShifts: todayShifts, date: today)),
-            (yesterdayShifts) {
-              final pending = yesterdayShifts.where((s) => s.status != ShiftStatus.auditado).toList();
+            (allPastShifts) {
+              final pending = allPastShifts.where((s) => s.status != ShiftStatus.auditado).toList();
               emit(ShiftsLoaded(
                 todayShifts: todayShifts,
                 pendingAuditShifts: pending,
@@ -181,6 +183,7 @@ class ShiftsBloc extends Bloc<ShiftsEvent, ShiftsState> {
       final result = await auditShiftAttendance(AuditParams(
         shiftId: event.shiftId,
         attendanceMap: event.attendanceMap,
+        notes: event.notes,
       ));
 
       result.fold(

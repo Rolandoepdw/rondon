@@ -20,7 +20,6 @@ class _NeighborsPageState extends State<NeighborsPage> {
   @override
   void initState() {
     super.initState();
-    // Cargamos todos los datos iniciales de esta sección
     context.read<NeighborsBloc>().add(LoadNeighbors());
     context.read<BaseSquadsBloc>().add(LoadBaseSquads());
     context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
@@ -61,22 +60,24 @@ class _NeighborsListTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<NeighborsBloc, NeighborsState>(
       builder: (context, state) {
-        if (state is NeighborsLoading) {
+        if (state.isLoading && state.neighbors.isEmpty) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is NeighborsLoaded) {
-          return _buildList(context, state.neighbors);
-        } else if (state is NeighborsError) {
-          return Center(child: Text('Error: ${state.message}'));
+        } else if (state.errorMessage != null && state.neighbors.isEmpty) {
+          return Center(child: Text('Error: ${state.errorMessage}'));
         }
-        return const Center(child: Text('Cargando vecinos...'));
+        return _buildList(context, state.neighbors);
       },
     );
   }
 
   Widget _buildList(BuildContext context, List<NeighborEntity> neighbors) {
     if (neighbors.isEmpty) {
-      return const Center(
-        child: Text('Aún no hay vecinos registrados.'),
+      return Scaffold(
+        body: const Center(child: Text('Aún no hay vecinos registrados.')),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () => _showNeighborForm(context),
+          child: const Icon(Icons.person_add),
+        ),
       );
     }
 

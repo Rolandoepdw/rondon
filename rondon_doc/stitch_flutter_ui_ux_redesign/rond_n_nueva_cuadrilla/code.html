@@ -1,0 +1,203 @@
+<!DOCTYPE html><html class="dark" lang="es" style=""><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Nueva Cuadrilla - Rondón</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-fixed": "#d8e2ff",
+                        "surface": "#061423",
+                        "on-secondary-container": "#97b8ff",
+                        "on-tertiary-container": "#91b4ff",
+                        "on-tertiary-fixed-variant": "#014395",
+                        "surface-container-high": "#1d2b3b",
+                        "background": "#061423",
+                        "secondary-fixed-dim": "#aec6ff",
+                        "on-surface-variant": "#c3c6d3",
+                        "surface-dim": "#061423",
+                        "secondary-container": "#074698",
+                        "inverse-surface": "#d5e4f9",
+                        "inverse-on-surface": "#243142",
+                        "surface-container-highest": "#283646",
+                        "on-secondary-fixed": "#001a42",
+                        "on-primary-fixed-variant": "#014395",
+                        "primary-fixed-dim": "#aec6ff",
+                        "on-primary-container": "#91b4ff",
+                        "on-primary-fixed": "#001a42",
+                        "surface-bright": "#2d3a4b",
+                        "inverse-primary": "#2b5caf",
+                        "on-tertiary": "#002e6a",
+                        "secondary": "#aec6ff",
+                        "surface-container-low": "#0e1c2c",
+                        "outline": "#8d909d",
+                        "on-error": "#690005",
+                        "surface-variant": "#283646",
+                        "error-container": "#93000a",
+                        "surface-container": "#132030",
+                        "outline-variant": "#434751",
+                        "tertiary-container": "#004395",
+                        "tertiary": "#aec6ff",
+                        "on-secondary": "#002e6a",
+                        "tertiary-fixed-dim": "#aec6ff",
+                        "on-secondary-fixed-variant": "#014395",
+                        "surface-container-lowest": "#020f1e",
+                        "on-surface": "#d5e4f9",
+                        "on-tertiary-fixed": "#001a42",
+                        "on-error-container": "#ffdad6",
+                        "primary-fixed": "#d8e2ff",
+                        "primary-container": "#004395",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#aec6ff",
+                        "on-background": "#d5e4f9",
+                        "secondary-fixed": "#d8e2ff",
+                        "on-primary": "#002e6a",
+                        "primary": "#aec6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "xs": "4px",
+                        "sm": "8px",
+                        "md": "16px",
+                        "lg": "24px",
+                        "xl": "40px",
+                        "container-padding": "16px",
+                        "gutter": "12px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "display": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface text-primary dark:text-primary font-headline text-headline-lg font-semibold tracking-tight fixed top-0 w-full z-50 bg-surface-container-low dark:bg-surface-container-low flex justify-between items-center px-4 h-16 w-full shadow-none border-b border-outline-variant/30">
+<button class="hover:bg-surface-container-highest dark:hover:bg-surface-container-highest transition-colors active:opacity-80 transition-opacity p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="arrow_back" data-weight="fill" style="font-variation-settings: &quot;FILL&quot; 1;">arrow_back</span>
+</button>
+<h1 class="font-headline text-title-md font-bold tracking-widest text-primary dark:text-primary">NUEVA CUADRILLA</h1>
+<div class="w-10"></div> <!-- Spacer for balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-20 pb-24 px-container-padding max-w-3xl mx-auto w-full flex flex-col gap-lg">
+<!-- Form Section -->
+<section class="bg-surface-container border border-outline-variant/30 rounded-lg p-md flex flex-col gap-md">
+<!-- Group Name -->
+<div class="flex flex-col gap-xs">
+<label class="font-label text-label-caps text-on-surface-variant uppercase tracking-wider" for="group-name">Nombre de la Cuadrilla</label>
+<input class="bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-lg px-md py-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" id="group-name" placeholder="Ej. Cuadrilla Norte" type="text">
+</div>
+<!-- Preferred Shift -->
+<div class="flex flex-col gap-xs">
+<label class="font-label text-label-caps text-on-surface-variant uppercase tracking-wider" for="shift-template">Turno Preferido (Plantilla)</label>
+<div class="relative">
+<select class="w-full bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-lg px-md py-sm appearance-none focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" id="shift-template">
+<option disabled="" selected="" value="">Seleccionar Turno</option>
+<option value="morning">Mañana (06:00 - 14:00)</option>
+<option value="afternoon">Tarde (14:00 - 22:00)</option>
+<option value="night">Noche (22:00 - 06:00)</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="arrow_drop_down">arrow_drop_down</span>
+</div>
+</div>
+<!-- Notes -->
+<div class="flex flex-col gap-xs">
+<label class="font-label text-label-caps text-on-surface-variant uppercase tracking-wider" for="notes">Instrucciones / Notas</label>
+<textarea class="bg-surface-container-low border border-outline-variant/50 text-on-surface rounded-lg px-md py-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all resize-none" id="notes" placeholder="Instrucciones adicionales para esta cuadrilla..." rows="3"></textarea>
+</div>
+</section>
+<!-- Member Selection Section -->
+<section class="bg-surface-container border border-outline-variant/30 rounded-lg p-md flex flex-col gap-sm">
+<h2 class="font-headline text-title-md font-semibold text-primary mb-2">Selección de Miembros</h2>
+<!-- Search -->
+<div class="relative mb-2">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+<input class="w-full bg-surface-container-lowest border border-outline-variant/50 text-on-surface rounded-lg pl-10 pr-md py-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary transition-all" placeholder="Buscar vecinos..." type="text">
+</div>
+<!-- Member List -->
+<div class="flex flex-col gap-unit"><!-- Member 1 -->
+<label class="bg-surface-container rounded-lg p-4 flex items-center justify-between transition-colors hover:bg-surface-container-high cursor-pointer mb-2">
+  <div class="flex items-center gap-4">
+    <div class="relative">
+      <div class="w-12 h-12 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+        <span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: &quot;FILL&quot; 1;">shield</span>
+      </div>
+      <div class="absolute bottom-0 right-0 w-5 h-5 bg-surface-variant rounded-full border-2 border-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[12px] font-bold text-on-surface">male</span>
+      </div>
+    </div>
+    <div class="flex flex-col">
+      <span class="font-semibold text-on-background">Carlos Mendoza</span>
+      <span class="text-sm text-outline-variant">Sector A</span>
+    </div>
+  </div>
+  <input class="form-checkbox h-5 w-5 text-primary-container bg-surface-container border-outline-variant rounded focus:ring-primary-container focus:ring-offset-surface" type="checkbox">
+</label>
+<!-- Member 2 -->
+<label class="bg-surface-container rounded-lg p-4 flex items-center justify-between transition-colors hover:bg-surface-container-high cursor-pointer mb-2">
+  <div class="flex items-center gap-4">
+    <div class="relative">
+      <div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+        <span class="material-symbols-outlined text-on-surface-variant">person</span>
+      </div>
+      <div class="absolute bottom-0 right-0 w-5 h-5 bg-surface-variant rounded-full border-2 border-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[12px] font-bold text-on-surface">female</span>
+      </div>
+    </div>
+    <div class="flex flex-col">
+      <span class="font-semibold text-on-background">Elena Ramirez</span>
+      <span class="text-sm text-outline-variant">Sector B</span>
+    </div>
+  </div>
+  <input class="form-checkbox h-5 w-5 text-primary-container bg-surface-container border-outline-variant rounded focus:ring-primary-container focus:ring-offset-surface" type="checkbox">
+</label>
+<!-- Member 3 -->
+<label class="bg-surface-container rounded-lg p-4 flex items-center justify-between transition-colors hover:bg-surface-container-high cursor-pointer">
+  <div class="flex items-center gap-4">
+    <div class="relative">
+      <div class="w-12 h-12 rounded-full bg-surface-variant flex items-center justify-center overflow-hidden">
+        <span class="material-symbols-outlined text-on-surface-variant">person</span>
+      </div>
+      <div class="absolute bottom-0 right-0 w-5 h-5 bg-surface-variant rounded-full border-2 border-surface-container flex items-center justify-center">
+        <span class="material-symbols-outlined text-[12px] font-bold text-on-surface">male</span>
+      </div>
+    </div>
+    <div class="flex flex-col">
+      <span class="font-semibold text-on-background">Luis Vargas</span>
+      <span class="text-sm text-outline-variant">Sector A</span>
+    </div>
+  </div>
+  <input class="form-checkbox h-5 w-5 text-primary-container bg-surface-container border-outline-variant rounded focus:ring-primary-container focus:ring-offset-surface" type="checkbox">
+</label></div>
+</section>
+</main>
+<!-- Bottom Action Bar (Contextual FAB replacement for transactional forms) -->
+<div class="fixed bottom-0 left-0 w-full bg-surface-container-lowest/90 backdrop-blur-md border-t border-outline-variant/30 p-md z-40 flex justify-end pb-safe">
+<button class="w-full bg-primary-container text-on-background font-body text-body-lg font-semibold py-4 rounded-lg flex items-center justify-center hover:bg-primary-container/90 active:scale-[0.98] transition-all shadow-lg" type="button">
+<span class="material-symbols-outlined mr-2" data-icon="save">save</span> Guardar Cuadrilla
+        </button>
+</div>
+
+
+</body></html>

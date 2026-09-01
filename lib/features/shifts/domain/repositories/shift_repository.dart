@@ -18,6 +18,7 @@ abstract class IShiftRepository {
   Future<Either<Failure, void>> auditShiftAttendance({
     required String shiftId,
     required Map<String, AttendanceStatus> attendanceMap,
+    String? notes,
   });
 
   Future<Either<Failure, DateTime?>> getLastCompletedShiftDate(String neighborId, DateTime beforeDate);

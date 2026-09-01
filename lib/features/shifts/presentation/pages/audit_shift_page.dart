@@ -15,6 +15,7 @@ class AuditShiftPage extends StatefulWidget {
 
 class _AuditShiftPageState extends State<AuditShiftPage> {
   late Map<String, AttendanceStatus> _attendanceMap;
+  final _notesController = TextEditingController();
 
   @override
   void initState() {
@@ -25,6 +26,13 @@ class _AuditShiftPageState extends State<AuditShiftPage> {
             ? AttendanceStatus.presente 
             : a.attendanceStatus
     };
+    _notesController.text = widget.shift.notes ?? '';
+  }
+
+  @override
+  void dispose() {
+    _notesController.dispose();
+    super.dispose();
   }
 
   @override
@@ -61,60 +69,75 @@ class _AuditShiftPageState extends State<AuditShiftPage> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: widget.shift.assignments.length,
-              itemBuilder: (context, index) {
-                final assignment = widget.shift.assignments[index];
-                final neighbor = assignment.neighbor;
-                final status = _attendanceMap[neighbor?.id] ?? AttendanceStatus.presente;
+            child: ListView(
+              children: [
+                ...widget.shift.assignments.map((assignment) {
+                  final neighbor = assignment.neighbor;
+                  final status = _attendanceMap[neighbor?.id] ?? AttendanceStatus.presente;
+                  final impact = _calculateImpact(assignment, status);
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      children: [
-                        ListTile(
-                          leading: CircleAvatar(
-                            child: Text(neighbor?.fullName[0] ?? '?'),
+                  return Card(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: Column(
+                        children: [
+                          ListTile(
+                            leading: CircleAvatar(
+                              child: Text(neighbor?.fullName[0] ?? '?'),
+                            ),
+                            title: Text(neighbor?.fullName ?? 'Desconocido'),
+                            subtitle: Text('${assignment.isSubstitute ? 'Refuerzo' : 'Titular'} • Bal: ${neighbor?.balance ?? 0}'),
+                            trailing: _buildImpactBadge(impact, neighbor?.balance ?? 0),
                           ),
-                          title: Text(neighbor?.fullName ?? 'Desconocido'),
-                          subtitle: Text(assignment.isSubstitute ? 'Refuerzo' : 'Titular'),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            ChoiceChip(
-                              label: const Text('PRESENTE'),
-                              selected: status == AttendanceStatus.presente,
-                              selectedColor: Colors.green.shade100,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() {
-                                    _attendanceMap[neighbor!.id] = AttendanceStatus.presente;
-                                  });
-                                }
-                              },
-                            ),
-                            ChoiceChip(
-                              label: const Text('FALTA'),
-                              selected: status == AttendanceStatus.falta,
-                              selectedColor: Colors.red.shade100,
-                              onSelected: (selected) {
-                                if (selected) {
-                                  setState(() {
-                                    _attendanceMap[neighbor!.id] = AttendanceStatus.falta;
-                                  });
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              ChoiceChip(
+                                label: const Text('PRESENTE'),
+                                selected: status == AttendanceStatus.presente,
+                                selectedColor: Colors.green.shade100,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      _attendanceMap[neighbor!.id] = AttendanceStatus.presente;
+                                    });
+                                  }
+                                },
+                              ),
+                              ChoiceChip(
+                                label: const Text('FALTA'),
+                                selected: status == AttendanceStatus.falta,
+                                selectedColor: Colors.red.shade100,
+                                onSelected: (selected) {
+                                  if (selected) {
+                                    setState(() {
+                                      _attendanceMap[neighbor!.id] = AttendanceStatus.falta;
+                                    });
+                                  }
+                                },
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
+                  );
+                }).toList(),
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: TextField(
+                    controller: _notesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Notas de la Auditoría',
+                      hintText: 'Ej: Turno tranquilo, María llegó 10 min tarde...',
+                      border: OutlineInputBorder(),
+                      alignLabelWithHint: true,
+                    ),
+                    maxLines: 3,
                   ),
-                );
-              },
+                ),
+              ],
             ),
           ),
           Padding(
@@ -147,6 +170,7 @@ class _AuditShiftPageState extends State<AuditShiftPage> {
               context.read<ShiftsBloc>().add(AuditShift(
                 shiftId: widget.shift.id,
                 attendanceMap: _attendanceMap,
+                notes: _notesController.text,
               ));
               Navigator.pop(ctx); // Cierra diálogo
               Navigator.pop(context); // Regresa al Dashboard
@@ -155,6 +179,49 @@ class _AuditShiftPageState extends State<AuditShiftPage> {
           ),
         ],
       ),
+    );
+  }
+
+  int _calculateImpact(ShiftAssignmentEntity assignment, AttendanceStatus status) {
+    if (status == AttendanceStatus.presente) {
+      if (assignment.isSubstitute) return 1;
+      return 0;
+    } else {
+      // Si ya fue penalizado (balanceImpacted == true), no volvemos a penalizar
+      if (assignment.balanceImpacted) return 0;
+      return -1;
+    }
+  }
+
+  Widget _buildImpactBadge(int impact, int currentBalance) {
+    if (impact == 0) return const SizedBox.shrink();
+    
+    final color = impact > 0 ? Colors.green : Colors.red;
+    final text = impact > 0 ? '+1' : '-1';
+    final nextBalance = currentBalance + impact;
+    
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: color),
+          ),
+          child: Text(
+            text,
+            style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 10),
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          'Próx: $nextBalance',
+          style: const TextStyle(fontSize: 10, color: Colors.grey),
+        ),
+      ],
     );
   }
 }

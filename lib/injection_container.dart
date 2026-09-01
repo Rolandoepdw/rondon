@@ -17,6 +17,7 @@ import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart'
 
 import 'package:rondon/features/neighbors/domain/usecases/update_neighbor.dart';
 import 'package:rondon/features/neighbors/domain/usecases/delete_neighbor.dart';
+import 'package:rondon/features/neighbors/domain/usecases/get_ledger_history.dart';
 
 import 'package:rondon/features/shifts/data/datasources/shift_template_local_datasource.dart';
 import 'package:rondon/features/shifts/data/repositories/shift_template_repository_impl.dart';
@@ -65,6 +66,7 @@ Future<void> init() async {
         createNeighbor: sl(),
         updateNeighbor: sl(),
         deleteNeighbor: sl(),
+        getLedgerHistory: sl(),
       ));
   sl.registerFactory(() => ShiftTemplatesBloc(
         getActiveTemplates: sl(),
@@ -90,6 +92,7 @@ Future<void> init() async {
   sl.registerLazySingleton(() => CreateBaseSquad(sl()));
   sl.registerLazySingleton(() => UpdateBaseSquad(sl()));
   sl.registerLazySingleton(() => DeleteBaseSquad(sl()));
+  sl.registerLazySingleton(() => GetLedgerHistory(sl()));
 
   // Repository
   sl.registerLazySingleton<INeighborRepository>(

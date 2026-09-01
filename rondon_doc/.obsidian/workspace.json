@@ -180,8 +180,7 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false,
-      "docx-exporter:Export current note to DOCX": false
+      "bases:Create new base": false
     }
   },
   "active": "ee879079802c2445",

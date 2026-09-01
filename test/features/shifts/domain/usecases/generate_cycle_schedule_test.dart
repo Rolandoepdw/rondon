@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
 import 'package:rondon/features/neighbors/domain/repositories/base_squad_repository.dart';
 import 'package:rondon/features/neighbors/domain/repositories/neighbor_repository.dart';
@@ -184,7 +185,7 @@ void main() {
         .thenAnswer((_) async => Right([tSecurity]));
     when(() => mockBaseSquadRepository.getAllSquads())
         .thenAnswer((_) async => const Right([]));
-    // Provide a list where support neighbor comes first by alphabet
+    
     final nA = NeighborEntity(
       id: 'na',
       fullName: 'A Support',
@@ -219,7 +220,50 @@ void main() {
 
     // Assert
     final captured = verify(() => mockShiftRepository.saveGeneratedShifts(captureAny())).captured.first as List<ScheduledShiftEntity>;
-    // The algorithm should replace nA with nB to meet minActiveProfiles=1
     expect(captured.first.assignments.first.neighborId, 'nb');
+  });
+
+  test('should rotate squads for the same template over multiple days', () async {
+    // Arrange
+    final s1 = BaseSquadEntity(
+      id: 's1',
+      name: 'Squad 1',
+      members: [n1],
+    );
+    final s2 = BaseSquadEntity(
+      id: 's2',
+      name: 'Squad 2',
+      members: [n2],
+    );
+
+    // Overriding minDays for this test to allow consecutive work
+    when(() => mockSettingsRepository.getMinDaysBetweenShifts())
+        .thenAnswer((_) async => const Right(0));
+
+    when(() => mockShiftTemplateRepository.getActiveTemplates())
+        .thenAnswer((_) async => Right([t1]));
+    when(() => mockBaseSquadRepository.getAllSquads())
+        .thenAnswer((_) async => Right([s1, s2]));
+    when(() => mockNeighborRepository.getAllNeighbors(onlyActive: any(named: 'onlyActive')))
+        .thenAnswer((_) async => Right([n1, n2]));
+    when(() => mockShiftRepository.getLastCompletedShiftDate(any(), any()))
+        .thenAnswer((_) async => const Right(null));
+    when(() => mockShiftRepository.saveGeneratedShifts(any()))
+        .thenAnswer((_) async => const Right(null));
+
+    final params = GenerateParams(
+      startDate: DateTime(2026, 10, 1),
+      endDate: DateTime(2026, 10, 2),
+    );
+
+    // Act
+    await usecase(params);
+
+    // Assert
+    final captured = verify(() => mockShiftRepository.saveGeneratedShifts(captureAny())).captured.first as List<ScheduledShiftEntity>;
+    expect(captured.length, 2);
+    
+    expect(captured[0].assignments.first.neighborId, 'n1');
+    expect(captured[1].assignments.first.neighborId, 'n2');
   });
 }

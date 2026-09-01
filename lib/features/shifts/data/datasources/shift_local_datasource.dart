@@ -21,6 +21,7 @@ abstract class ShiftLocalDataSource {
   Future<void> auditShiftAttendance({
     required String shiftId,
     required Map<String, AttendanceStatus> attendanceMap,
+    String? notes,
   });
   Future<DateTime?> getLastCompletedShiftDate(String neighborId, DateTime beforeDate);
 }
@@ -144,6 +145,7 @@ class ShiftLocalDataSourceImpl implements ShiftLocalDataSource {
   Future<void> auditShiftAttendance({
     required String shiftId,
     required Map<String, AttendanceStatus> attendanceMap,
+    String? notes,
   }) async {
     final db = await appDatabase.database;
     await db.transaction((txn) async {
@@ -211,8 +213,16 @@ class ShiftLocalDataSourceImpl implements ShiftLocalDataSource {
         );
       }
 
-      // Marcar turno como AUDITADO
-      await txn.update('scheduled_shifts', {'status': 'AUDITADO'}, where: 'id = ?', whereArgs: [shiftId]);
+      // Marcar turno como AUDITADO y guardar notas
+      await txn.update(
+        'scheduled_shifts', 
+        {
+          'status': 'AUDITADO',
+          'notes': notes,
+        }, 
+        where: 'id = ?', 
+        whereArgs: [shiftId]
+      );
     });
   }
 

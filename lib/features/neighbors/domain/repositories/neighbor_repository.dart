@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:rondon/core/error/failures.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/neighbors/domain/entities/balance_ledger_record.dart';
 
 enum LedgerReason {
   inasistencia('INASISTENCIA'),
@@ -28,4 +29,5 @@ abstract class INeighborRepository {
     String? shiftId,
     String? notes,
   });
+  Future<Either<Failure, List<BalanceLedgerRecordEntity>>> getLedgerHistory(String neighborId);
 }

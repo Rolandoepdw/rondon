@@ -16,6 +16,7 @@ abstract class NeighborLocalDataSource {
     String? shiftId,
     String? notes,
   });
+  Future<List<Map<String, dynamic>>> getLedgerHistory(String neighborId);
 }
 
 class NeighborLocalDataSourceImpl implements NeighborLocalDataSource {
@@ -119,5 +120,16 @@ class NeighborLocalDataSourceImpl implements NeighborLocalDataSource {
         'notes': notes,
       });
     });
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getLedgerHistory(String neighborId) async {
+    final db = await appDatabase.database;
+    return await db.query(
+      'balance_ledger_records',
+      where: 'neighbor_id = ?',
+      whereArgs: [neighborId],
+      orderBy: 'created_at DESC',
+    );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:rondon/core/error/failures.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/neighbors/domain/entities/balance_ledger_record.dart';
 import 'package:rondon/features/neighbors/domain/repositories/neighbor_repository.dart';
 import 'package:rondon/features/neighbors/data/datasources/neighbor_local_datasource.dart';
 import 'package:rondon/features/neighbors/data/models/neighbor_model.dart';
@@ -14,7 +15,6 @@ class NeighborRepositoryImpl implements INeighborRepository {
   Future<Either<Failure, List<NeighborEntity>>> getAllNeighbors({bool onlyActive = true}) async {
     try {
       final neighbors = await localDataSource.getAllNeighbors(onlyActive: onlyActive);
-      // Explícitamente convertimos a una lista de la interfaz base
       return Right(List<NeighborEntity>.from(neighbors));
     } catch (e) {
       return Left(DatabaseFailure(e.toString()));
@@ -78,6 +78,25 @@ class NeighborRepositoryImpl implements INeighborRepository {
         notes: notes,
       );
       return const Right(null);
+    } catch (e) {
+      return Left(DatabaseFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<BalanceLedgerRecordEntity>>> getLedgerHistory(String neighborId) async {
+    try {
+      final results = await localDataSource.getLedgerHistory(neighborId);
+      final list = results.map((map) => BalanceLedgerRecordEntity(
+        id: map['id'],
+        neighborId: map['neighbor_id'],
+        scheduledShiftId: map['scheduled_shift_id'],
+        delta: map['delta'],
+        reason: LedgerReason.fromString(map['reason']),
+        notes: map['notes'],
+        createdAt: DateTime.parse(map['created_at']),
+      )).toList();
+      return Right(list);
     } catch (e) {
       return Left(DatabaseFailure(e.toString()));
     }

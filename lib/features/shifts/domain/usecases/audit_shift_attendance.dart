@@ -15,6 +15,7 @@ class AuditShiftAttendance implements UseCase<void, AuditParams> {
     return await repository.auditShiftAttendance(
       shiftId: params.shiftId,
       attendanceMap: params.attendanceMap,
+      notes: params.notes,
     );
   }
 }
@@ -22,9 +23,10 @@ class AuditShiftAttendance implements UseCase<void, AuditParams> {
 class AuditParams extends Equatable {
   final String shiftId;
   final Map<String, AttendanceStatus> attendanceMap;
+  final String? notes;
 
-  const AuditParams({required this.shiftId, required this.attendanceMap});
+  const AuditParams({required this.shiftId, required this.attendanceMap, this.notes});
 
   @override
-  List<Object?> get props => [shiftId, attendanceMap];
+  List<Object?> get props => [shiftId, attendanceMap, notes];
 }

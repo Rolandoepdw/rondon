@@ -1,88 +1,99 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
 import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
+import 'package:uuid/uuid.dart';
 
-class NeighborDetailPage extends StatelessWidget {
+class NeighborDetailPage extends StatefulWidget {
   final String neighborId;
 
   const NeighborDetailPage({super.key, required this.neighborId});
 
   @override
-  Widget build(BuildContext context) {
-    // Aseguramos que las cuadrillas estén cargadas para el formulario de edición
-    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
+  State<NeighborDetailPage> createState() => _NeighborDetailPageState();
+}
 
-    return BlocListener<NeighborsBloc, NeighborsState>(
+class _NeighborDetailPageState extends State<NeighborDetailPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
+    context.read<NeighborsBloc>().add(LoadLedgerHistory(widget.neighborId));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocConsumer<NeighborsBloc, NeighborsState>(
+      listenWhen: (prev, curr) => prev.neighbors != curr.neighbors,
       listener: (context, state) {
-        if (state is NeighborsLoaded) {
-          final stillExists = state.neighbors.any((n) => n.id == neighborId);
-          if (!stillExists) {
-            Navigator.pop(context);
-          }
+        final stillExists = state.neighbors.any((n) => n.id == widget.neighborId);
+        if (!stillExists && state.neighbors.isNotEmpty) {
+          Navigator.pop(context);
         }
       },
-      child: BlocBuilder<NeighborsBloc, NeighborsState>(
-        builder: (context, state) {
-          if (state is NeighborsLoaded) {
-            final neighbor = state.neighbors.cast<NeighborEntity?>().firstWhere(
-                  (n) => n?.id == neighborId,
-                  orElse: () => null,
-                );
+      builder: (context, state) {
+        final neighbor = state.neighbors.cast<NeighborEntity?>().firstWhere(
+              (n) => n?.id == widget.neighborId,
+              orElse: () => null,
+            );
 
-            if (neighbor == null) {
-              return const Scaffold(
-                body: Center(child: Text('Vecino no encontrado')),
-              );
-            }
+        if (neighbor == null) {
+          return const Scaffold(
+            body: Center(child: Text('Vecino no encontrado')),
+          );
+        }
 
-            return Scaffold(
-              appBar: AppBar(
-                title: const Text('Detalles del Vecino'),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.edit),
-                    onPressed: () => _showNeighborForm(context, neighbor: neighbor),
-                    tooltip: 'Editar',
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red),
-                    onPressed: () => _showDeleteConfirmation(context, neighbor),
-                    tooltip: 'Eliminar',
-                  ),
-                ],
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Detalles del Vecino'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () => _showNeighborForm(context, neighbor: neighbor),
+                tooltip: 'Editar',
               ),
-              body: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-                  Center(
-                    child: CircleAvatar(
-                      radius: 50,
-                      backgroundColor: neighbor.operationalProfile == OperationalProfile.activo 
-                          ? Colors.green.shade100 
-                          : Colors.orange.shade100,
-                      child: Icon(
-                        neighbor.gender == Gender.masculino ? Icons.male : Icons.female,
-                        size: 50,
-                        color: neighbor.operationalProfile == OperationalProfile.activo 
-                            ? Colors.green 
-                            : Colors.orange,
-                      ),
+              IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: () => _showDeleteConfirmation(context, neighbor),
+                tooltip: 'Eliminar',
+              ),
+            ],
+          ),
+          body: RefreshIndicator(
+            onRefresh: () async {
+              context.read<NeighborsBloc>().add(LoadNeighbors());
+              context.read<NeighborsBloc>().add(LoadLedgerHistory(widget.neighborId));
+            },
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Center(
+                  child: CircleAvatar(
+                    radius: 50,
+                    backgroundColor: neighbor.operationalProfile == OperationalProfile.activo 
+                        ? Colors.green.shade100 
+                        : Colors.orange.shade100,
+                    child: Icon(
+                      neighbor.gender == Gender.masculino ? Icons.male : Icons.female,
+                      size: 50,
+                      color: neighbor.operationalProfile == OperationalProfile.activo 
+                          ? Colors.green 
+                          : Colors.orange,
                     ),
                   ),
-                  const SizedBox(height: 24),
-                  _buildInfoSection(context, neighbor),
-                ],
-              ),
-            );
-          }
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        },
-      ),
+                ),
+                const SizedBox(height: 24),
+                _buildInfoSection(context, neighbor),
+                const SizedBox(height: 24),
+                _buildLedgerSection(context, state),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -151,6 +162,69 @@ class NeighborDetailPage extends StatelessWidget {
           ],
         ],
       ),
+    );
+  }
+
+  Widget _buildLedgerSection(BuildContext context, NeighborsState state) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Text(
+            'HISTORIAL DE PUNTOS',
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
+        ),
+        if (state.isLoading && state.ledgerHistory.isEmpty)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(16.0),
+            child: CircularProgressIndicator(),
+          ))
+        else if (state.ledgerHistory.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Center(child: Text('Sin movimientos registrados.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+            ),
+          )
+        else
+          Card(
+            child: ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: state.ledgerHistory.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final record = state.ledgerHistory[index];
+                final isPositive = record.delta > 0;
+                return ListTile(
+                  dense: true,
+                  leading: Icon(
+                    isPositive ? Icons.add_circle_outline : Icons.remove_circle_outline,
+                    color: isPositive ? Colors.green : Colors.red,
+                  ),
+                  title: Text(record.reason.value),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(DateFormat('d MMM, yyyy HH:mm').format(record.createdAt)),
+                      if (record.notes != null && record.notes!.isNotEmpty)
+                        Text(record.notes!, style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 11)),
+                    ],
+                  ),
+                  trailing: Text(
+                    '${isPositive ? '+' : ''}${record.delta}',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: isPositive ? Colors.green : Colors.red,
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
     );
   }
 

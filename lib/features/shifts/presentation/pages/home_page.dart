@@ -75,6 +75,8 @@ class HomePage extends StatelessWidget {
       children: [
         if (state.pendingAuditShifts.isNotEmpty)
           _buildPendingAuditBanner(context, state.pendingAuditShifts),
+        
+        // Sección de Hoy
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -97,6 +99,20 @@ class HomePage extends StatelessWidget {
           _buildEmptyState(context)
         else
           ...state.todayShifts.map((shift) => _ShiftCard(shift: shift)),
+
+        // Sección de Turnos de Ayer (si están visibles o se desea mostrar historial rápido)
+        if (state.pendingAuditShifts.isNotEmpty) ...[
+          const Divider(height: 32),
+          Text(
+            '⏳ GUARDIAS PASADAS PENDIENTES',
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  color: Colors.orange.shade800,
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+          const SizedBox(height: 16),
+          ...state.pendingAuditShifts.map((shift) => _ShiftCard(shift: shift)),
+        ],
       ],
     );
   }
