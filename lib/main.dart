@@ -12,8 +12,11 @@ import 'package:rondon/features/shifts/presentation/pages/home_page.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbors_page.dart';
 import 'package:rondon/features/shifts/presentation/pages/calendar_page.dart';
 import 'package:rondon/features/settings/presentation/pages/settings_page.dart';
+import 'package:rondon/core/theme/app_theme.dart';
 import 'package:rondon/core/services/notification_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
 import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
 import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
@@ -64,17 +67,7 @@ class RondonApp extends StatelessWidget {
         supportedLocales: const [
           Locale('es', 'ES'),
         ],
-        theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: Colors.indigo,
-            brightness: Brightness.light,
-          ),
-          useMaterial3: true,
-          appBarTheme: const AppBarTheme(
-            centerTitle: true,
-            elevation: 0,
-          ),
-        ),
+        theme: AppTheme.darkTheme,
         home: const MainNavigationPage(),
       ),
     );
@@ -112,9 +105,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
         },
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.shield_outlined),
-            selectedIcon: Icon(Icons.shield),
-            label: 'Hoy',
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Inicio',
           ),
           NavigationDestination(
             icon: Icon(Icons.calendar_month_outlined),
@@ -122,9 +115,9 @@ class _MainNavigationPageState extends State<MainNavigationPage> {
             label: 'Calendario',
           ),
           NavigationDestination(
-            icon: Icon(Icons.people_outline),
-            selectedIcon: Icon(Icons.people),
-            label: 'Comunidad',
+            icon: Icon(Icons.groups_outlined),
+            selectedIcon: Icon(Icons.groups),
+            label: 'Gestión',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
