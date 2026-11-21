@@ -51,6 +51,33 @@ class ShiftAssignmentEntity extends Equatable {
     required this.balanceImpacted,
   });
 
+  factory ShiftAssignmentEntity.fromMap(Map<String, dynamic> map, {NeighborEntity? neighbor}) {
+    return ShiftAssignmentEntity(
+      id: map['id'] as String,
+      scheduledShiftId: map['scheduled_shift_id'] as String,
+      neighborId: map['neighbor_id'] as String,
+      neighbor: neighbor,
+      isSubstitute: (map['is_substitute'] as int) == 1,
+      substituteForNeighborId: map['substitute_for_neighbor_id'] as String?,
+      attendanceStatus: AttendanceStatus.fromString(map['attendance_status'] as String),
+      effectiveOperationalProfile: OperationalProfile.fromString(map['effective_operational_profile'] as String),
+      balanceImpacted: (map['balance_impacted'] as int) == 1,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'scheduled_shift_id': scheduledShiftId,
+      'neighbor_id': neighborId,
+      'is_substitute': isSubstitute ? 1 : 0,
+      'substitute_for_neighbor_id': substituteForNeighborId,
+      'attendance_status': attendanceStatus.value,
+      'effective_operational_profile': effectiveOperationalProfile.value,
+      'balance_impacted': balanceImpacted ? 1 : 0,
+    };
+  }
+
   @override
   List<Object?> get props => [
         id,
@@ -87,7 +114,7 @@ class ScheduledShiftEntity extends Equatable {
   int get currentCount => assignments.length;
 
   int get activeProfilesCount => assignments
-      .where((a) => a.effectiveOperationalProfile == OperationalProfile.activo)
+      .where((a) => a.effectiveOperationalProfile == OperationalProfile.active)
       .length;
 
   bool get meetsSecurityRequirements =>
@@ -95,6 +122,31 @@ class ScheduledShiftEntity extends Equatable {
 
   bool get isUnderQuota =>
       template != null && assignments.length < template!.targetQuota;
+
+  factory ScheduledShiftEntity.fromMap(Map<String, dynamic> map, {
+    ShiftTemplateEntity? template,
+    List<ShiftAssignmentEntity> assignments = const [],
+  }) {
+    return ScheduledShiftEntity(
+      id: map['id'] as String,
+      date: DateTime.parse(map['date'] as String),
+      shiftTemplateId: map['shift_template_id'] as String,
+      template: template,
+      status: ShiftStatus.fromString(map['status'] as String),
+      notes: map['notes'] as String?,
+      assignments: assignments,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'date': date.toIso8601String().split('T')[0],
+      'shift_template_id': shiftTemplateId,
+      'status': status.value,
+      'notes': notes,
+    };
+  }
 
   @override
   List<Object?> get props => [

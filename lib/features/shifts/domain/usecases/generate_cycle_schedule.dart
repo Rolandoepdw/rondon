@@ -134,13 +134,13 @@ class GenerateCycleSchedule implements UseCase<void, GenerateParams> {
                   }
 
                   // 4. Verificación de Seguridad (Mínimo Activos)
-                  int activeCount = assignments.where((a) => a.effectiveOperationalProfile == OperationalProfile.activo).length;
+                  int activeCount = assignments.where((a) => a.effectiveOperationalProfile == OperationalProfile.active).length;
                   if (activeCount < template.minActiveProfiles) {
                     // Intentar reemplazar miembros de APOYO por ACTIVOS disponibles
                     int needed = template.minActiveProfiles - activeCount;
                     
                     final activeCandidates = allNeighbors.where((n) {
-                      return n.operationalProfile == OperationalProfile.activo &&
+                      return n.operationalProfile == OperationalProfile.active &&
                              !assignments.any((a) => a.neighborId == n.id) &&
                              _passesRestPeriod(n.id, currentDate, minDays, lastShiftDates) &&
                              _isGenderCompatible(n, template);
@@ -155,7 +155,7 @@ class GenerateCycleSchedule implements UseCase<void, GenerateParams> {
 
                     for (var candidate in activeCandidates.take(needed)) {
                       // Buscar un miembro de APOYO para reemplazar
-                      int supportIdx = assignments.indexWhere((a) => a.effectiveOperationalProfile == OperationalProfile.apoyo);
+                      int supportIdx = assignments.indexWhere((a) => a.effectiveOperationalProfile == OperationalProfile.support);
                       if (supportIdx != -1) {
                         final replaced = assignments[supportIdx];
                         lastShiftDates.remove(replaced.neighborId); // Ya no trabaja hoy
@@ -198,17 +198,17 @@ class GenerateCycleSchedule implements UseCase<void, GenerateParams> {
   }
 
   bool _isGenderCompatible(NeighborEntity neighbor, ShiftTemplateEntity template) {
-    if (template.allowedGender == AllowedGenderPolicy.mixto) return true;
-    if (template.allowedGender == AllowedGenderPolicy.soloHombres && neighbor.gender == Gender.masculino) return true;
-    if (template.allowedGender == AllowedGenderPolicy.soloMujeres && neighbor.gender == Gender.femenino) return true;
+    if (template.allowedGender == AllowedGenderPolicy.mixed) return true;
+    if (template.allowedGender == AllowedGenderPolicy.maleOnly && neighbor.gender == Gender.male) return true;
+    if (template.allowedGender == AllowedGenderPolicy.femaleOnly && neighbor.gender == Gender.female) return true;
     return false;
   }
 
   ShiftAssignmentEntity _createAssignment(String shiftId, NeighborEntity neighbor, ShiftTemplateEntity template, {required bool isSubstitute}) {
-    // Lógica de excepción operativa: mujer en turno de hombres es APOYO
+    // Operational exception logic: female in male-only shift acts as SUPPORT
     OperationalProfile effectiveProfile = neighbor.operationalProfile;
-    if (template.allowedGender == AllowedGenderPolicy.soloHombres && neighbor.gender == Gender.femenino) {
-      effectiveProfile = OperationalProfile.apoyo;
+    if (template.allowedGender == AllowedGenderPolicy.maleOnly && neighbor.gender == Gender.female) {
+      effectiveProfile = OperationalProfile.support;
     }
 
     return ShiftAssignmentEntity(

@@ -1,40 +1,40 @@
-import 'dart:developer' as dev;
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rondon/core/utils/app_logger.dart';
 
 class AppBlocObserver extends BlocObserver {
   @override
   void onCreate(BlocBase bloc) {
     super.onCreate(bloc);
-    dev.log('CREATED: ${bloc.runtimeType}', name: 'BLOC');
+    AppLogger.cubit(bloc.runtimeType.toString(), 'INITIALIZED');
   }
 
   @override
   void onChange(BlocBase bloc, Change change) {
     super.onChange(bloc, change);
-    dev.log('CHANGE in ${bloc.runtimeType}: ${change.currentState} -> ${change.nextState}', name: 'BLOC');
+    
+    // Detection of duplicate state emissions
+    if (change.currentState == change.nextState) {
+      AppLogger.duplicateState(
+        bloc.runtimeType.toString(), 
+        change.nextState.toString(),
+      );
+    } else {
+      AppLogger.cubit(
+        bloc.runtimeType.toString(), 
+        'STATE CHANGE: ${change.nextState.runtimeType}',
+      );
+    }
   }
 
   @override
   void onError(BlocBase bloc, Object error, StackTrace stackTrace) {
-    dev.log('ERROR in ${bloc.runtimeType}: $error', name: 'BLOC', error: error, stackTrace: stackTrace);
+    AppLogger.error('CUBIT_ERROR', 'Error in ${bloc.runtimeType}', error, stackTrace);
     super.onError(bloc, error, stackTrace);
   }
 
   @override
   void onClose(BlocBase bloc) {
     super.onClose(bloc);
-    dev.log('CLOSED: ${bloc.runtimeType}', name: 'BLOC');
-  }
-
-  @override
-  void onEvent(Bloc bloc, Object? event) {
-    super.onEvent(bloc, event);
-    dev.log('EVENT in ${bloc.runtimeType}: $event', name: 'BLOC');
-  }
-
-  @override
-  void onTransition(Bloc bloc, Transition transition) {
-    super.onTransition(bloc, transition);
-    dev.log('TRANSITION in ${bloc.runtimeType}: ${transition.event} -> ${transition.nextState}', name: 'BLOC');
+    AppLogger.cubit(bloc.runtimeType.toString(), 'CLOSED');
   }
 }

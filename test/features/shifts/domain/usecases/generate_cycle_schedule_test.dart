@@ -54,7 +54,7 @@ void main() {
     name: 'Turno 1',
     startTime: '22:00',
     endTime: '02:00',
-    allowedGender: AllowedGenderPolicy.mixto,
+    allowedGender: AllowedGenderPolicy.mixed,
     targetQuota: 2,
     minActiveProfiles: 1,
     displayOrder: 1,
@@ -64,8 +64,8 @@ void main() {
   final n1 = NeighborEntity(
     id: 'n1',
     fullName: 'Active Neighbor',
-    gender: Gender.masculino,
-    operationalProfile: OperationalProfile.activo,
+    gender: Gender.male,
+    operationalProfile: OperationalProfile.active,
     balance: 0,
     isActive: true,
   );
@@ -73,8 +73,8 @@ void main() {
   final n2 = NeighborEntity(
     id: 'n2',
     fullName: 'Support Neighbor',
-    gender: Gender.femenino,
-    operationalProfile: OperationalProfile.apoyo,
+    gender: Gender.female,
+    operationalProfile: OperationalProfile.support,
     balance: 0,
     isActive: true,
   );
@@ -136,8 +136,8 @@ void main() {
     final nDebt = NeighborEntity(
       id: 'n_debt',
       fullName: 'Debtor',
-      gender: Gender.masculino,
-      operationalProfile: OperationalProfile.activo,
+      gender: Gender.male,
+      operationalProfile: OperationalProfile.active,
       balance: -2,
       isActive: true,
     );
@@ -174,7 +174,7 @@ void main() {
       name: 'Secure Turn',
       startTime: '22:00',
       endTime: '02:00',
-      allowedGender: AllowedGenderPolicy.mixto,
+      allowedGender: AllowedGenderPolicy.mixed,
       targetQuota: 1,
       minActiveProfiles: 1,
       displayOrder: 1,
@@ -189,16 +189,16 @@ void main() {
     final nA = NeighborEntity(
       id: 'na',
       fullName: 'A Support',
-      gender: Gender.masculino,
-      operationalProfile: OperationalProfile.apoyo,
+      gender: Gender.male,
+      operationalProfile: OperationalProfile.support,
       balance: 0,
       isActive: true,
     );
     final nB = NeighborEntity(
       id: 'nb',
       fullName: 'B Active',
-      gender: Gender.masculino,
-      operationalProfile: OperationalProfile.activo,
+      gender: Gender.male,
+      operationalProfile: OperationalProfile.active,
       balance: 0,
       isActive: true,
     );

@@ -48,7 +48,7 @@ CREATE TABLE base_squads (
     id TEXT PRIMARY KEY, -- UUID v4
     name TEXT NOT NULL, -- Ej: "Cuadrilla Las Rosas", "Familia Pérez"
     shift_template_id TEXT, -- Plantilla preferente/habitual
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (shift_template_id) REFERENCES shift_templates(id) ON DELETE SET NULL
 );
 
@@ -63,7 +63,7 @@ CREATE TABLE neighbors (
     balance INTEGER NOT NULL DEFAULT 0, -- 0=Al día, +N=Crédito, -N=Deuda
     is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (base_squad_id) REFERENCES base_squads(id) ON DELETE SET NULL
 );
 
@@ -74,7 +74,7 @@ CREATE TABLE scheduled_shifts (
     shift_template_id TEXT NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('PLANIFICADO', 'REPLANIFICADO', 'EN_CURSO', 'AUDITADO', 'DEFICIT_OPERATIVO')),
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (shift_template_id) REFERENCES shift_templates(id) ON DELETE RESTRICT
 );
 
@@ -88,33 +88,60 @@ CREATE TABLE shift_assignments (
     attendance_status TEXT NOT NULL DEFAULT 'PENDIENTE' CHECK (attendance_status IN ('PENDIENTE', 'PRESENTE', 'FALTA')),
     effective_operational_profile TEXT NOT NULL CHECK (effective_operational_profile IN ('ACTIVO', 'APOYO')),
     balance_impacted INTEGER NOT NULL DEFAULT 0 CHECK (balance_impacted IN (0, 1)),
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (scheduled_shift_id) REFERENCES scheduled_shifts(id) ON DELETE CASCADE,
     FOREIGN KEY (neighbor_id) REFERENCES neighbors(id) ON DELETE RESTRICT,
     FOREIGN KEY (substitute_for_neighbor_id) REFERENCES neighbors(id) ON DELETE SET NULL,
-    UNIQUE(scheduled_shift_id, neighbor_id) -- Un vecino no puede estar duplicado en el mismo turno
+    UNIQUE(scheduled_shift_id, neighbor_id), -- Un vecino no puede estar duplicado en el mismo turno
+    CHECK (
+      (is_substitute = 0 AND substitute_for_neighbor_id IS NULL) OR
+      (is_substitute = 1 AND substitute_for_neighbor_id IS NOT NULL)
+    )
 );
 
 -- 7. Historial / Auditoría de Puntuación y Balances (Score Ledger)
+-- Protegido contra ON DELETE CASCADE para preservar trazabilidad contable
 CREATE TABLE balance_ledger_records (
     id TEXT PRIMARY KEY, -- UUID v4
     neighbor_id TEXT NOT NULL,
     scheduled_shift_id TEXT,
-    delta INTEGER NOT NULL CHECK (delta IN (-1, 1)), -- Solo cambios discretos de +1 o -1
+    delta INTEGER NOT NULL CHECK (delta != 0), -- Permite ajustes manuales arbitrarios (+2, -3, etc.)
     reason TEXT NOT NULL CHECK (reason IN ('INASISTENCIA', 'COBERTURA_VOLUNTARIA', 'RECUPERACION_DEUDA', 'AJUSTE_MANUAL_ADMIN')),
     notes TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
-    FOREIGN KEY (neighbor_id) REFERENCES neighbors(id) ON DELETE CASCADE,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    FOREIGN KEY (neighbor_id) REFERENCES neighbors(id) ON DELETE RESTRICT,
     FOREIGN KEY (scheduled_shift_id) REFERENCES scheduled_shifts(id) ON DELETE SET NULL
 );
+
+-- Triggers para sincronización automática y atómica de neighbors.balance
+CREATE TRIGGER trg_ledger_ai AFTER INSERT ON balance_ledger_records BEGIN
+    UPDATE neighbors SET balance = balance + NEW.delta WHERE id = NEW.neighbor_id;
+END;
+
+CREATE TRIGGER trg_ledger_ad AFTER DELETE ON balance_ledger_records BEGIN
+    UPDATE neighbors SET balance = balance - OLD.delta WHERE id = OLD.neighbor_id;
+END;
+
+CREATE TRIGGER trg_ledger_au AFTER UPDATE ON balance_ledger_records BEGIN
+    UPDATE neighbors SET balance = balance - OLD.delta + NEW.delta WHERE id = NEW.neighbor_id;
+END;
 
 -- Índices de Rendimiento
 CREATE INDEX idx_shifts_date ON scheduled_shifts(date);
 CREATE INDEX idx_assignments_neighbor ON shift_assignments(neighbor_id);
 CREATE INDEX idx_assignments_shift ON shift_assignments(scheduled_shift_id);
+CREATE INDEX idx_assignments_neighbor_shift ON shift_assignments(neighbor_id, scheduled_shift_id);
 CREATE INDEX idx_neighbors_balance ON neighbors(balance);
 CREATE INDEX idx_neighbors_active ON neighbors(is_active);
 ```
+
+---
+
+## 2. Notas de Evolución y Roadmap Futuro
+
+### Gestión de Indisponibilidad / Vacaciones (Planificado para futuras versiones)
+* **Requisito identificado:** Actualmente, las ausencias temporales o vacaciones de un vecino se manejan marcando `is_active = 0`, lo cual lo retira completamente del sistema operativo.
+* **Propuesta futura:** Añadir una tabla dedicada `neighbor_unavailabilities` (`id`, `neighbor_id`, `start_date`, `end_date`, `reason`) para permitir que el motor de asignación automática evite programar guardias durante períodos vacacionales o licencias médicas sin perder su estado activo ni su historial en las cuadrillas base.
 
 ---
 

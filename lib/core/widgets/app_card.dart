@@ -8,6 +8,7 @@ class AppCard extends StatelessWidget {
   final VoidCallback? onTap;
   final Color? color;
   final bool showBorder;
+  final EdgeInsetsGeometry? margin;
 
   const AppCard({
     super.key,
@@ -16,33 +17,33 @@ class AppCard extends StatelessWidget {
     this.onTap,
     this.color,
     this.showBorder = true,
+    this.margin,
   });
 
   @override
   Widget build(BuildContext context) {
-    Widget content = Container(
-      padding: padding ?? const EdgeInsets.all(AppSizes.md),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: margin ?? EdgeInsets.zero,
+      child: Material(
         color: color ?? AppColors.surfaceContainer,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        border: showBorder
-            ? Border.all(
-                color: AppColors.outlineVariant.withOpacity(0.3),
-                width: 1,
-              )
-            : null,
+        clipBehavior: onTap != null ? Clip.antiAlias : Clip.none,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
+          side: showBorder
+              ? BorderSide(
+                  color: AppColors.outlineVariant.withAlpha(76),
+                  width: 1,
+                )
+              : BorderSide.none,
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: padding ?? const EdgeInsets.all(AppSizes.md),
+            child: child,
+          ),
+        ),
       ),
-      child: child,
     );
-
-    if (onTap != null) {
-      return InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-        child: content,
-      );
-    }
-
-    return content;
   }
 }

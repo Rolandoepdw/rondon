@@ -1,10 +1,12 @@
 import 'dart:math';
 import 'package:uuid/uuid.dart';
 import 'package:rondon/database/app_database.dart';
+import 'package:rondon/core/utils/app_logger.dart';
 
 class DatabaseSeeder {
   static Future<void> clearDatabase() async {
     final db = await AppDatabase.instance.database;
+    AppLogger.delete('SEEDER', 'Clearing all database tables...');
     await db.transaction((txn) async {
       await txn.delete('balance_ledger_records');
       await txn.delete('shift_assignments');
@@ -12,8 +14,6 @@ class DatabaseSeeder {
       await txn.delete('neighbors');
       await txn.delete('base_squads');
       await txn.delete('shift_templates');
-      // No borramos app_settings para mantener la estructura de configuración, 
-      // pero si quieres un reset total, podrías borrarla también.
     });
   }
 
@@ -23,8 +23,11 @@ class DatabaseSeeder {
     final uuid = const Uuid();
     final random = Random();
 
+    AppLogger.info('SEEDER', 'Starting database seeding process...');
+
     await db.transaction((txn) async {
       // 1. Plantillas de Turno
+      AppLogger.create('SEEDER', 'Seeding shift templates...');
       final t1Id = uuid.v4();
       final t2Id = uuid.v4();
       final t3Id = uuid.v4();
@@ -34,7 +37,7 @@ class DatabaseSeeder {
         'name': 'Turno Temprano (Mixto)',
         'start_time': '20:00',
         'end_time': '00:00',
-        'allowed_gender': 'MIXTO',
+        'allowed_gender': 'MIXED',
         'target_quota': 3,
         'min_active_profiles': 1,
         'display_order': 1,
@@ -46,7 +49,7 @@ class DatabaseSeeder {
         'name': 'Turno Madrugada (Hombres)',
         'start_time': '00:00',
         'end_time': '04:00',
-        'allowed_gender': 'SOLO_HOMBRES',
+        'allowed_gender': 'MALE_ONLY',
         'target_quota': 3,
         'min_active_profiles': 1,
         'display_order': 2,
@@ -58,7 +61,7 @@ class DatabaseSeeder {
         'name': 'Turno Especial (Mujeres)',
         'start_time': '18:00',
         'end_time': '22:00',
-        'allowed_gender': 'SOLO_MUJERES',
+        'allowed_gender': 'FEMALE_ONLY',
         'target_quota': 2,
         'min_active_profiles': 1,
         'display_order': 3,
@@ -66,6 +69,7 @@ class DatabaseSeeder {
       });
 
       // 2. Cuadrillas (10 cuadrillas)
+      AppLogger.create('SEEDER', 'Seeding 10 base squads...');
       List<String> squadIds = [];
       for (int i = 1; i <= 10; i++) {
         final sId = uuid.v4();
@@ -78,6 +82,7 @@ class DatabaseSeeder {
       }
 
       // 3. Vecinos (60 personas)
+      AppLogger.create('SEEDER', 'Seeding 60 neighbors and their ledger history...');
       final firstNames = ['Juan', 'María', 'Carlos', 'Ana', 'Luis', 'Elena', 'Pedro', 'Sofía', 'Miguel', 'Lucía', 'Jorge', 'Carmen', 'Roberto', 'Isabel', 'Fernando', 'Rosa', 'Antonio', 'Silvia', 'Manuel', 'Beatriz', 'Ricardo', 'Teresa', 'Francisco', 'Patricia', 'Daniela', 'Julio', 'Esther', 'Hugo', 'Alicia', 'Victor'];
       final lastNames = ['Pérez', 'García', 'Rodríguez', 'Martínez', 'López', 'Sánchez', 'Gómez', 'Díaz', 'Fernández', 'Ruiz', 'Morales', 'Castro', 'Ortiz', 'Silva', 'Vega', 'Ramos', 'Flores', 'Reyes', 'Castillo', 'Jiménez', 'Moreno', 'Molina', 'Ortega', 'Delgado', 'Ríos', 'Peralta', 'Luna', 'Medina', 'Guzmán', 'Navarro'];
 
@@ -96,14 +101,26 @@ class DatabaseSeeder {
           'id': nId,
           'full_name': '$firstName $lastName ${i + 1}',
           'phone': '555-${1000 + i}',
-          'gender': isMale ? 'MASCULINO' : 'FEMENINO',
-          'operational_profile': isActive ? 'ACTIVO' : 'APOYO',
+          'gender': isMale ? 'MALE' : 'FEMALE',
+          'operational_profile': isActive ? 'ACTIVE' : 'SUPPORT',
           'base_squad_id': squadId,
-          'balance': initialBalance,
+          'balance': 0, // Initialized at 0; triggers will update it if ledger records are inserted
           'is_active': 1,
           'notes': i % 10 == 0 ? 'Vecino de interés' : null,
         });
+
+        if (initialBalance != 0) {
+          await txn.insert('balance_ledger_records', {
+            'id': uuid.v4(),
+            'neighbor_id': nId,
+            'scheduled_shift_id': null,
+            'delta': initialBalance,
+            'reason': 'AJUSTE_MANUAL_ADMIN',
+            'notes': 'Saldo inicial sembrado (Balance de prueba)',
+          });
+        }
       }
+      AppLogger.info('SEEDER', 'Database seeding process finished successfully');
     });
   }
 }

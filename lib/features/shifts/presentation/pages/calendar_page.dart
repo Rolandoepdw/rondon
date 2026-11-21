@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:table_calendar/table_calendar.dart';
+import 'package:rondon/core/theme/app_colors.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/widgets/app_badge.dart';
+import 'package:rondon/core/widgets/app_empty_state.dart';
+import 'package:rondon/core/widgets/app_shift_card.dart';
 import 'package:rondon/features/shifts/domain/entities/scheduled_shift.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shifts_cubit.dart';
+import 'package:rondon/features/shifts/presentation/pages/audit_shift_page.dart';
+import 'package:table_calendar/table_calendar.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -12,10 +19,12 @@ class CalendarPage extends StatefulWidget {
 }
 
 class _CalendarPageState extends State<CalendarPage> {
+  // 1. Keys, Controllers & Local State
   CalendarFormat _calendarFormat = CalendarFormat.month;
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
 
+  // 2. Lifecycle Methods
   @override
   void initState() {
     super.initState();
@@ -23,23 +32,20 @@ class _CalendarPageState extends State<CalendarPage> {
     _loadShiftsForMonth(_focusedDay);
   }
 
-  void _loadShiftsForMonth(DateTime month) {
-    final firstDay = DateTime(month.year, month.month, 1);
-    final lastDay = DateTime(month.year, month.month + 1, 0);
-    context.read<ShiftsBloc>().add(LoadShiftsRange(start: firstDay, end: lastDay));
-  }
-
-  List<ScheduledShiftEntity> _getEventsForDay(DateTime day, List<ScheduledShiftEntity> allShifts) {
-    return allShifts.where((shift) => isSameDay(shift.date, day)).toList();
-  }
-
+  // 3. Build Method
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Calendario de Guardias'),
+        title: Row(
+          children: [
+            Image.asset('assets/images/logo.png', width: AppSizes.xl, height: AppSizes.xl),
+            const SizedBox(width: AppSizes.sm),
+            const Text('Calendario'),
+          ],
+        ),
       ),
-      body: BlocBuilder<ShiftsBloc, ShiftsState>(
+      body: BlocBuilder<ShiftsCubit, ShiftsState>(
         builder: (context, state) {
           List<ScheduledShiftEntity> shifts = [];
           if (state is ShiftsLoaded) {
@@ -73,27 +79,38 @@ class _CalendarPageState extends State<CalendarPage> {
                   _focusedDay = focusedDay;
                   _loadShiftsForMonth(focusedDay);
                 },
-                calendarStyle: const CalendarStyle(
+                calendarStyle: CalendarStyle(
                   markersAlignment: Alignment.bottomCenter,
-                  markerDecoration: BoxDecoration(
-                    color: Colors.blue,
+                  markerDecoration: const BoxDecoration(
+                    color: AppColors.primary,
                     shape: BoxShape.circle,
                   ),
                   todayDecoration: BoxDecoration(
-                    color: Colors.orangeAccent,
+                    color: AppColors.primaryContainer.withValues(alpha: 0.4),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.primaryContainer),
+                  ),
+                  selectedDecoration: const BoxDecoration(
+                    color: AppColors.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  selectedDecoration: BoxDecoration(
-                    color: Colors.indigo,
-                    shape: BoxShape.circle,
-                  ),
+                  defaultTextStyle: context.textTheme.bodyMedium!,
+                  weekendTextStyle: context.textTheme.bodyMedium!.copyWith(color: AppColors.error),
+                  outsideTextStyle: context.textTheme.bodySmall!.copyWith(color: AppColors.onSurfaceMuted),
                 ),
-                headerStyle: const HeaderStyle(
+                headerStyle: HeaderStyle(
                   formatButtonVisible: false,
                   titleCentered: true,
+                  titleTextStyle: context.textTheme.titleMedium!.copyWith(fontWeight: FontWeight.bold),
+                  leftChevronIcon: const Icon(Icons.chevron_left, color: AppColors.primary),
+                  rightChevronIcon: const Icon(Icons.chevron_right, color: AppColors.primary),
+                ),
+                daysOfWeekStyle: DaysOfWeekStyle(
+                  weekdayStyle: context.design.labelCaps,
+                  weekendStyle: context.design.labelCaps.copyWith(color: AppColors.error),
                 ),
               ),
-              const SizedBox(height: 8.0),
+              const Divider(height: 1, color: AppColors.outlineVariant),
               Expanded(
                 child: _buildEventList(_getEventsForDay(_selectedDay!, shifts)),
               ),
@@ -104,32 +121,52 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  // 4. Action Handlers & Async Callbacks
+  void _loadShiftsForMonth(DateTime month) {
+    final firstDay = DateTime(month.year, month.month, 1);
+    final lastDay = DateTime(month.year, month.month + 1, 0);
+    context.read<ShiftsCubit>().loadShiftsRange(firstDay, lastDay);
+  }
+
+  List<ScheduledShiftEntity> _getEventsForDay(DateTime day, List<ScheduledShiftEntity> allShifts) {
+    return allShifts.where((shift) => isSameDay(shift.date, day)).toList();
+  }
+
+  // 5. Helper UI Builders / Sub-widgets
   Widget _buildEventList(List<ScheduledShiftEntity> dayShifts) {
     if (dayShifts.isEmpty) {
-      return const Center(
-        child: Text('No hay guardias para este día.'),
+      return const AppEmptyState(
+        icon: Icons.event_available_outlined,
+        title: 'Día libre',
+        description: 'No hay guardias programadas para esta fecha.',
       );
     }
 
     return ListView.builder(
       itemCount: dayShifts.length,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(AppSizes.md),
       itemBuilder: (context, index) {
         final shift = dayShifts[index];
-        return Card(
-          margin: const EdgeInsets.symmetric(vertical: 4),
-          child: ListTile(
-            leading: Icon(
-              Icons.shield,
-              color: shift.status == ShiftStatus.auditado ? Colors.green : Colors.blue,
+        return AppShiftCard(
+          title: shift.template?.name ?? 'Turno',
+          timeRange: '${shift.template?.startTime} - ${shift.template?.endTime}',
+          details: [
+            '${shift.assignments.length} vecinos asignados',
+          ],
+          badges: [
+            AppBadge(
+              label: shift.status.value,
+              type: shift.status == ShiftStatus.auditado ? AppBadgeType.success : AppBadgeType.info,
             ),
-            title: Text(shift.template?.name ?? 'Turno'),
-            subtitle: Text('⏰ ${shift.template?.startTime} - ${shift.template?.endTime}'),
-            trailing: Text(
-              shift.status.value,
-              style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
-            ),
-          ),
+          ],
+          onMenuPressed: () {
+            if (shift.status != ShiftStatus.auditado) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AuditShiftPage(shift: shift)),
+              );
+            }
+          },
         );
       },
     );

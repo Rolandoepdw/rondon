@@ -87,9 +87,9 @@ class GetReplacementCandidates implements UseCase<List<NeighborCandidate>, Repla
   }
 
   OperationalProfile _calculateEffectiveProfile(NeighborEntity neighbor, ScheduledShiftEntity shift) {
-    if (shift.template?.allowedGender == AllowedGenderPolicy.soloHombres &&
-        neighbor.gender == Gender.femenino) {
-      return OperationalProfile.apoyo;
+    if (shift.template?.allowedGender == AllowedGenderPolicy.maleOnly &&
+        neighbor.gender == Gender.female) {
+      return OperationalProfile.support;
     }
     return neighbor.operationalProfile;
   }

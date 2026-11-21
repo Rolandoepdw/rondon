@@ -38,7 +38,6 @@ class AppTheme {
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surfaceBase,
         foregroundColor: AppColors.onSurface,
-        centerTitle: true,
         elevation: 0,
         titleTextStyle: AppTextStyles.titleMd,
       ),
@@ -49,7 +48,7 @@ class AppTheme {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
           side: BorderSide(
-            color: AppColors.outlineVariant.withOpacity(0.3),
+            color: AppColors.outlineVariant.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -64,7 +63,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusDefault),
           ),
-          textStyle: AppTextStyles.bodyLg.copyWith(fontWeight: FontWeight.bold),
+          textStyle: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -75,6 +74,7 @@ class AppTheme {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppSizes.radiusDefault),
           ),
+
         ),
       ),
 
@@ -87,7 +87,7 @@ class AppTheme {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusDefault),
-          borderSide: BorderSide(color: AppColors.outlineVariant.withOpacity(0.5)),
+          borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusDefault),
@@ -125,6 +125,14 @@ class AppTheme {
         indicatorColor: AppColors.primary,
         labelStyle: AppTextStyles.bodySm.copyWith(fontWeight: FontWeight.bold),
         unselectedLabelStyle: AppTextStyles.bodySm,
+      ),
+
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: AppColors.primaryContainer,
+        foregroundColor: AppColors.onPrimaryContainer,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppSizes.radiusXl),
+        ),
       ),
 
       extensions: [

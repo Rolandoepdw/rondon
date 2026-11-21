@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:rondon/core/utils/app_bloc_observer.dart';
 import 'package:rondon/injection_container.dart' as di;
@@ -15,15 +16,12 @@ import 'package:rondon/features/settings/presentation/pages/settings_page.dart';
 import 'package:rondon/core/theme/app_theme.dart';
 import 'package:rondon/core/services/notification_service.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
-import 'package:rondon/core/theme/theme_context_ext.dart';
-import 'package:rondon/core/theme/app_sizes.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shifts_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/neighbors_cubit.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shift_templates_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/base_squads_cubit.dart';
 
 void main() async {
-  // 1. Inicializar sqflite_ffi si estamos en desktop
   if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
     sqfliteFfiInit();
     databaseFactory = databaseFactoryFfi;
@@ -34,9 +32,9 @@ void main() async {
   dev.log('Starting app on platform: ${Platform.operatingSystem}', name: 'APP');
 
   await initializeDateFormatting('es_ES', null);
+  Intl.defaultLocale = 'es_ES';
+  
   await di.init();
-
-  // Inicializar notificaciones
   await di.sl<NotificationService>().init();
 
   Bloc.observer = AppBlocObserver();
@@ -51,10 +49,10 @@ class RondonApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => di.sl<ShiftsBloc>()..add(LoadTodayShifts())),
-        BlocProvider(create: (_) => di.sl<NeighborsBloc>()..add(LoadNeighbors())),
-        BlocProvider(create: (_) => di.sl<ShiftTemplatesBloc>()),
-        BlocProvider(create: (_) => di.sl<BaseSquadsBloc>()),
+        BlocProvider(create: (_) => di.sl<ShiftsCubit>()..loadTodayShifts()),
+        BlocProvider(create: (_) => di.sl<NeighborsCubit>()..loadNeighbors()),
+        BlocProvider(create: (_) => di.sl<ShiftTemplatesCubit>()),
+        BlocProvider(create: (_) => di.sl<BaseSquadsCubit>()),
       ],
       child: MaterialApp(
         title: 'Rondon',

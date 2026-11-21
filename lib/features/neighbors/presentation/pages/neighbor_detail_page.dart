@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/widgets/app_badge.dart';
+import 'package:rondon/core/widgets/app_button.dart';
+import 'package:rondon/core/widgets/app_card.dart';
 import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
-import 'package:uuid/uuid.dart';
+import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/base_squads_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/neighbors_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/pages/neighbor_form_page.dart';
 
 class NeighborDetailPage extends StatefulWidget {
   final String neighborId;
@@ -17,16 +22,20 @@ class NeighborDetailPage extends StatefulWidget {
 }
 
 class _NeighborDetailPageState extends State<NeighborDetailPage> {
+  // 1. Keys, Controllers & Local State
+
+  // 2. Lifecycle Methods
   @override
   void initState() {
     super.initState();
-    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
-    context.read<NeighborsBloc>().add(LoadLedgerHistory(widget.neighborId));
+    context.read<BaseSquadsCubit>().loadBaseSquads();
+    context.read<NeighborsCubit>().loadLedgerHistory(widget.neighborId);
   }
 
+  // 3. Build Method
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<NeighborsBloc, NeighborsState>(
+    return BlocConsumer<NeighborsCubit, NeighborsState>(
       listenWhen: (prev, curr) => prev.neighbors != curr.neighbors,
       listener: (context, state) {
         final stillExists = state.neighbors.any((n) => n.id == widget.neighborId);
@@ -48,15 +57,18 @@ class _NeighborDetailPageState extends State<NeighborDetailPage> {
 
         return Scaffold(
           appBar: AppBar(
-            title: const Text('Detalles del Vecino'),
+            title: const Text('Ficha del Vecino'),
             actions: [
               IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () => _showNeighborForm(context, neighbor: neighbor),
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => NeighborFormPage(neighbor: neighbor)),
+                ),
                 tooltip: 'Editar',
               ),
               IconButton(
-                icon: const Icon(Icons.delete, color: Colors.red),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
                 onPressed: () => _showDeleteConfirmation(context, neighbor),
                 tooltip: 'Eliminar',
               ),
@@ -64,30 +76,16 @@ class _NeighborDetailPageState extends State<NeighborDetailPage> {
           ),
           body: RefreshIndicator(
             onRefresh: () async {
-              context.read<NeighborsBloc>().add(LoadNeighbors());
-              context.read<NeighborsBloc>().add(LoadLedgerHistory(widget.neighborId));
+              context.read<NeighborsCubit>().loadNeighbors();
+              context.read<NeighborsCubit>().loadLedgerHistory(widget.neighborId);
             },
             child: ListView(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(AppSizes.md),
               children: [
-                Center(
-                  child: CircleAvatar(
-                    radius: 50,
-                    backgroundColor: neighbor.operationalProfile == OperationalProfile.activo 
-                        ? Colors.green.shade100 
-                        : Colors.orange.shade100,
-                    child: Icon(
-                      neighbor.gender == Gender.masculino ? Icons.male : Icons.female,
-                      size: 50,
-                      color: neighbor.operationalProfile == OperationalProfile.activo 
-                          ? Colors.green 
-                          : Colors.orange,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                _buildProfileHeader(context, neighbor),
+                const SizedBox(height: AppSizes.lg),
                 _buildInfoSection(context, neighbor),
-                const SizedBox(height: 24),
+                const SizedBox(height: AppSizes.xl),
                 _buildLedgerSection(context, state),
               ],
             ),
@@ -97,282 +95,173 @@ class _NeighborDetailPageState extends State<NeighborDetailPage> {
     );
   }
 
+  // 4. Action Handlers & Async Callbacks
+  void _showDeleteConfirmation(BuildContext context, NeighborEntity neighbor) {
+    context.showThemedDialog(
+      title: const Text('Confirmar eliminación'),
+      content: Text('¿Estás seguro de que deseas eliminar a ${neighbor.fullName}? Esta acción no se puede deshacer.'),
+      actions: [
+        AppButton.tertiary(
+          label: 'CANCELAR',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.primary(
+          label: 'ELIMINAR',
+          onPressed: () {
+            context.read<NeighborsCubit>().removeNeighbor(neighbor.id);
+            Navigator.pop(context);
+          },
+        ),
+      ],
+    );
+  }
+
+  // 5. Helper UI Builders / Sub-widgets
+  Widget _buildProfileHeader(BuildContext context, NeighborEntity neighbor) {
+    final bool isActivo = neighbor.operationalProfile == OperationalProfile.active;
+
+    return Column(
+      children: [
+        Stack(
+          children: [
+            CircleAvatar(
+              radius: 50,
+              backgroundColor: isActivo ? context.colorScheme.primaryContainer : context.colorScheme.surfaceContainerHighest,
+              child: Icon(
+                isActivo ? Icons.shield : Icons.person,
+                size: 48,
+                color: isActivo ? context.colorScheme.onPrimaryContainer : context.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: context.colorScheme.surface,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: context.colorScheme.outlineVariant, width: 2),
+                ),
+                child: Icon(
+                  neighbor.gender == Gender.male ? Icons.male : Icons.female,
+                  size: 20,
+                  color: context.colorScheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSizes.md),
+        Text(neighbor.fullName, style: context.textTheme.headlineLarge),
+        const SizedBox(height: AppSizes.xs),
+        Text(neighbor.phone ?? 'Sin teléfono', style: context.textTheme.bodySmall),
+      ],
+    );
+  }
+
   Widget _buildInfoSection(BuildContext context, NeighborEntity neighbor) {
-    return Card(
+    return AppCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.person),
-            title: const Text('Nombre Completo'),
-            subtitle: Text(neighbor.fullName),
-          ),
+          _buildInfoRow(context, Icons.groups_outlined, 'Cuadrilla Base', _getSquadName(neighbor)),
           const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.phone),
-            title: const Text('Teléfono'),
-            subtitle: Text(neighbor.phone ?? 'Sin teléfono'),
-          ),
-          const Divider(height: 1),
-          BlocBuilder<BaseSquadsBloc, BaseSquadsState>(
-            builder: (context, state) {
-              String squadName = 'Ninguna';
-              if (state is BaseSquadsLoaded && neighbor.baseSquadId != null) {
-                final squad = state.squads.cast<BaseSquadEntity?>().firstWhere(
-                  (s) => s?.id == neighbor.baseSquadId,
-                  orElse: () => null,
-                );
-                if (squad != null) squadName = squad.name;
-              }
-              return ListTile(
-                leading: const Icon(Icons.groups),
-                title: const Text('Cuadrilla Base'),
-                subtitle: Text(squadName),
-              );
-            },
-          ),
-          const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.admin_panel_settings),
-            title: const Text('Perfil Operativo'),
-            subtitle: Text(neighbor.operationalProfile.value),
-            trailing: Chip(
-              label: Text(
-                neighbor.isActive ? 'ACTIVO' : 'INACTIVO',
-                style: const TextStyle(fontSize: 10, color: Colors.white),
-              ),
-              backgroundColor: neighbor.isActive ? Colors.green : Colors.grey,
+          _buildInfoRow(
+            context,
+            Icons.admin_panel_settings_outlined,
+            'Perfil Operativo',
+            neighbor.operationalProfile.value,
+            trailing: AppBadge(
+              label: neighbor.isActive ? 'ACTIVO' : 'INACTIVO',
+              type: neighbor.isActive ? AppBadgeType.success : AppBadgeType.info,
             ),
           ),
           const Divider(height: 1),
-          ListTile(
-            leading: const Icon(Icons.account_balance_wallet),
-            title: const Text('Balance de Guardias'),
-            subtitle: Text(neighbor.balance >= 0 
-                ? 'Crédito / Al día' 
-                : 'Deuda pendiente'),
-            trailing: _buildBalanceChip(neighbor.balance),
+          _buildInfoRow(
+            context,
+            Icons.account_balance_wallet_outlined,
+            'Balance Actual',
+            '${neighbor.balance} guardias',
+            trailing: Text(
+              neighbor.balance.toString(),
+              style: context.design.scoreNum.copyWith(
+                color: neighbor.balance < 0 ? context.colorScheme.error : context.colorScheme.primary,
+                fontSize: 24,
+              ),
+            ),
           ),
           if (neighbor.notes != null && neighbor.notes!.isNotEmpty) ...[
             const Divider(height: 1),
-            ListTile(
-              leading: const Icon(Icons.notes),
-              title: const Text('Notas'),
-              subtitle: Text(neighbor.notes!),
-            ),
+            _buildInfoRow(context, Icons.notes, 'Observaciones', neighbor.notes!),
           ],
         ],
       ),
     );
+  }
+
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value, {Widget? trailing}) {
+    return ListTile(
+      leading: Icon(icon, color: context.colorScheme.primary, size: 20),
+      title: Text(label, style: context.design.labelCaps),
+      subtitle: Text(value, style: context.textTheme.bodyLarge),
+      trailing: trailing,
+    );
+  }
+
+  String _getSquadName(NeighborEntity neighbor) {
+    final state = context.read<BaseSquadsCubit>().state;
+    if (state is BaseSquadsLoaded && neighbor.baseSquadId != null) {
+      final squad = state.squads.cast<BaseSquadEntity?>().firstWhere(
+        (s) => s?.id == neighbor.baseSquadId,
+        orElse: () => null,
+      );
+      if (squad != null) return squad.name;
+    }
+    return 'Ninguna';
   }
 
   Widget _buildLedgerSection(BuildContext context, NeighborsState state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'HISTORIAL DE PUNTOS',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
+        Text('HISTORIAL DE PUNTOS', style: context.design.labelCaps),
+        const SizedBox(height: AppSizes.md),
         if (state.isLoading && state.ledgerHistory.isEmpty)
-          const Center(child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: CircularProgressIndicator(),
-          ))
+          const Center(child: CircularProgressIndicator())
         else if (state.ledgerHistory.isEmpty)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Center(child: Text('Sin movimientos registrados.', style: TextStyle(fontSize: 12, color: Colors.grey))),
+          const AppCard(
+            child: Center(
+              child: Text('Sin movimientos registrados.', style: TextStyle(fontSize: 12, color: Colors.grey)),
             ),
           )
         else
-          Card(
-            child: ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: state.ledgerHistory.length,
-              separatorBuilder: (_, __) => const Divider(height: 1),
-              itemBuilder: (context, index) {
-                final record = state.ledgerHistory[index];
-                final isPositive = record.delta > 0;
-                return ListTile(
+          ...state.ledgerHistory.map((record) {
+            final isPositive = record.delta > 0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: AppSizes.sm),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
                   dense: true,
                   leading: Icon(
                     isPositive ? Icons.add_circle_outline : Icons.remove_circle_outline,
-                    color: isPositive ? Colors.green : Colors.red,
+                    color: isPositive ? Colors.greenAccent : Colors.redAccent,
                   ),
-                  title: Text(record.reason.value),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(DateFormat('d MMM, yyyy HH:mm').format(record.createdAt)),
-                      if (record.notes != null && record.notes!.isNotEmpty)
-                        Text(record.notes!, style: const TextStyle(fontStyle: FontStyle.italic, fontSize: 11)),
-                    ],
-                  ),
+                  title: Text(record.reason.value, style: context.textTheme.bodyLarge),
+                  subtitle: Text(DateFormat('d MMM, yyyy HH:mm').format(record.createdAt), style: context.textTheme.bodySmall),
                   trailing: Text(
                     '${isPositive ? '+' : ''}${record.delta}',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: isPositive ? Colors.green : Colors.red,
+                    style: context.design.scoreNum.copyWith(
+                      color: isPositive ? Colors.greenAccent : Colors.redAccent,
                     ),
                   ),
-                );
-              },
-            ),
-          ),
+                ),
+              ),
+            );
+          }),
       ],
-    );
-  }
-
-  Widget _buildBalanceChip(int balance) {
-    Color color = Colors.grey;
-    if (balance > 0) color = Colors.green;
-    if (balance < 0) color = Colors.red;
-
-    return Chip(
-      label: Text(
-        balance.toString(),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-      ),
-      backgroundColor: color,
-    );
-  }
-
-  void _showDeleteConfirmation(BuildContext context, NeighborEntity neighbor) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Estás seguro de que deseas eliminar a ${neighbor.fullName}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancelar'),
-          ),
-          TextButton(
-            onPressed: () {
-              context.read<NeighborsBloc>().add(RemoveNeighbor(neighbor.id));
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showNeighborForm(BuildContext context, {required NeighborEntity neighbor}) {
-    final neighborsBloc = context.read<NeighborsBloc>();
-    final squadsState = context.read<BaseSquadsBloc>().state;
-    
-    final nameController = TextEditingController(text: neighbor.fullName);
-    final phoneController = TextEditingController(text: neighbor.phone);
-    final notesController = TextEditingController(text: neighbor.notes);
-    Gender selectedGender = neighbor.gender;
-    OperationalProfile selectedProfile = neighbor.operationalProfile;
-    bool isActive = neighbor.isActive;
-    String? selectedSquadId = neighbor.baseSquadId;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Editar Vecino'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nombre Completo'),
-                ),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'Teléfono'),
-                  keyboardType: TextInputType.phone,
-                ),
-                if (squadsState is BaseSquadsLoaded)
-                  DropdownButtonFormField<String?>(
-                    value: selectedSquadId,
-                    decoration: const InputDecoration(labelText: 'Cuadrilla Base'),
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('Ninguna')),
-                      ...squadsState.squads.map((s) => DropdownMenuItem(value: s.id, child: Text(s.name))),
-                    ],
-                    onChanged: (v) => setState(() => selectedSquadId = v),
-                  ),
-                TextField(
-                  controller: notesController,
-                  decoration: const InputDecoration(labelText: 'Notas / Observaciones'),
-                  maxLines: 3,
-                ),
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text('Activo'),
-                  value: isActive,
-                  onChanged: (v) => setState(() => isActive = v),
-                ),
-                const Text('Género:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Row(
-                  children: [
-                    Radio<Gender>(
-                      value: Gender.masculino,
-                      groupValue: selectedGender,
-                      onChanged: (v) => setState(() => selectedGender = v!),
-                    ),
-                    const Text('M'),
-                    Radio<Gender>(
-                      value: Gender.femenino,
-                      groupValue: selectedGender,
-                      onChanged: (v) => setState(() => selectedGender = v!),
-                    ),
-                    const Text('F'),
-                  ],
-                ),
-                const Text('Perfil Operativo:', style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButton<OperationalProfile>(
-                  value: selectedProfile,
-                  isExpanded: true,
-                  items: OperationalProfile.values.map((p) {
-                    return DropdownMenuItem(value: p, child: Text(p.value));
-                  }).toList(),
-                  onChanged: (v) => setState(() => selectedProfile = v!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final updatedNeighbor = NeighborEntity(
-                    id: neighbor.id,
-                    fullName: nameController.text,
-                    phone: phoneController.text,
-                    gender: selectedGender,
-                    operationalProfile: selectedProfile,
-                    balance: neighbor.balance,
-                    isActive: isActive,
-                    notes: notesController.text,
-                    baseSquadId: selectedSquadId,
-                  );
-                  neighborsBloc.add(EditNeighbor(updatedNeighbor));
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

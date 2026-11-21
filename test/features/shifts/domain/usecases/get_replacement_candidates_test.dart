@@ -39,7 +39,7 @@ void main() {
     name: 'Turno 1',
     startTime: '22:00',
     endTime: '02:00',
-    allowedGender: AllowedGenderPolicy.mixto,
+    allowedGender: AllowedGenderPolicy.mixed,
     targetQuota: 2,
     minActiveProfiles: 1,
     displayOrder: 1,
@@ -57,8 +57,8 @@ void main() {
   final n1 = NeighborEntity(
     id: 'n1',
     fullName: 'Neighbor 1',
-    gender: Gender.masculino,
-    operationalProfile: OperationalProfile.activo,
+    gender: Gender.male,
+    operationalProfile: OperationalProfile.active,
     balance: 0,
     isActive: true,
   );
@@ -66,8 +66,8 @@ void main() {
   final n2 = NeighborEntity(
     id: 'n2',
     fullName: 'Neighbor 2',
-    gender: Gender.masculino,
-    operationalProfile: OperationalProfile.activo,
+    gender: Gender.male,
+    operationalProfile: OperationalProfile.active,
     balance: -1,
     isActive: true,
   );
@@ -96,8 +96,8 @@ void main() {
     final n3 = NeighborEntity(
       id: 'n3',
       fullName: 'Neighbor 3',
-      gender: Gender.masculino,
-      operationalProfile: OperationalProfile.activo,
+      gender: Gender.male,
+      operationalProfile: OperationalProfile.active,
       balance: -2, // More debt than n2 (-1)
       isActive: true,
     );

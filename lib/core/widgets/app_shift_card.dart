@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../theme/app_text_styles.dart';
-import '../theme/theme_context_ext.dart';
-import 'app_badge.dart';
+import 'app_card.dart';
 
 class AppShiftCard extends StatelessWidget {
   final String title;
@@ -12,6 +11,7 @@ class AppShiftCard extends StatelessWidget {
   final List<Widget>? badges;
   final List<Widget>? actions;
   final VoidCallback? onMenuPressed;
+  final Widget? trailing;
   final bool isDisabled;
 
   const AppShiftCard({
@@ -22,6 +22,7 @@ class AppShiftCard extends StatelessWidget {
     this.badges,
     this.actions,
     this.onMenuPressed,
+    this.trailing,
     this.isDisabled = false,
   });
 
@@ -29,17 +30,9 @@ class AppShiftCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Opacity(
       opacity: isDisabled ? 0.6 : 1.0,
-      child: Container(
+      child: AppCard(
         margin: const EdgeInsets.symmetric(vertical: AppSizes.sm),
-        padding: const EdgeInsets.all(AppSizes.lg),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          border: Border.all(
-            color: AppColors.outlineVariant.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
+        padding: const EdgeInsets.all(AppSizes.md),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -60,7 +53,7 @@ class AppShiftCard extends StatelessWidget {
               const SizedBox(height: AppSizes.md),
               Row(
                 children: actions!.map((a) => Expanded(child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: AppSizes.xs),
                   child: a,
                 ))).toList(),
               ),
@@ -83,13 +76,13 @@ class AppShiftCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
           ),
         ),
-        if (onMenuPressed != null)
+        if (trailing != null)
+          trailing!
+        else if (onMenuPressed != null)
           IconButton(
             onPressed: onMenuPressed,
-            icon: const Icon(Icons.more_vert, size: 20),
+            icon: const Icon(Icons.more_vert, size: AppSizes.lg),
             color: AppColors.onSurfaceVariant,
-            constraints: const BoxConstraints(),
-            padding: EdgeInsets.zero,
           ),
       ],
     );

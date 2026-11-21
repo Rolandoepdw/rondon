@@ -3,6 +3,7 @@ import '../theme/app_colors.dart';
 import '../theme/app_sizes.dart';
 import '../theme/app_text_styles.dart';
 import '../../features/neighbors/domain/entities/neighbor.dart';
+import 'app_card.dart';
 
 class AppNeighborTile extends StatelessWidget {
   final NeighborEntity neighbor;
@@ -16,47 +17,36 @@ class AppNeighborTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
+    return AppCard(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-      child: Container(
-        padding: const EdgeInsets.all(AppSizes.md),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceContainer,
-          borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          border: Border.all(
-            color: AppColors.outlineVariant.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            _buildAvatar(),
-            const SizedBox(width: AppSizes.md),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    neighbor.fullName,
-                    style: AppTextStyles.titleMd,
-                  ),
-                  Text(
-                    neighbor.phone ?? 'Sin teléfono',
-                    style: AppTextStyles.bodySm,
-                  ),
-                ],
-              ),
+      padding: const EdgeInsets.all(AppSizes.md),
+      child: Row(
+        children: [
+          _buildAvatar(),
+          const SizedBox(width: AppSizes.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  neighbor.fullName,
+                  style: AppTextStyles.titleMd,
+                ),
+                Text(
+                  neighbor.phone ?? 'Sin teléfono',
+                  style: AppTextStyles.bodySm,
+                ),
+              ],
             ),
-            _buildScore(),
-          ],
-        ),
+          ),
+          _buildScore(),
+        ],
       ),
     );
   }
 
   Widget _buildAvatar() {
-    final bool isActive = neighbor.operationalProfile == OperationalProfile.activo;
+    final bool isActive = neighbor.operationalProfile == OperationalProfile.active;
     
     return Stack(
       children: [
@@ -64,7 +54,7 @@ class AppNeighborTile extends StatelessWidget {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: isActive ? AppColors.primaryContainer : AppColors.surfaceContainerHigh,
+            color: isActive ? AppColors.primaryContainer : AppColors.surfaceContainerHighest,
             shape: BoxShape.circle,
           ),
           child: Icon(
@@ -80,12 +70,12 @@ class AppNeighborTile extends StatelessWidget {
             width: 18,
             height: 18,
             decoration: BoxDecoration(
-              color: AppColors.surfaceContainerHigh,
+              color: AppColors.surfaceContainerHighest,
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.surfaceContainer, width: 2),
             ),
             child: Icon(
-              neighbor.gender == Gender.masculino ? Icons.male : Icons.female,
+              neighbor.gender == Gender.male ? Icons.male : Icons.female,
               size: 10,
               color: AppColors.onSurface,
             ),

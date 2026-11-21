@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/widgets/app_badge.dart';
+import 'package:rondon/core/widgets/app_button.dart';
+import 'package:rondon/core/widgets/app_empty_state.dart';
+import 'package:rondon/core/widgets/app_shift_card.dart';
 import 'package:rondon/features/shifts/domain/entities/shift_template.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
-import 'package:uuid/uuid.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shift_templates_cubit.dart';
+import 'package:rondon/features/shifts/presentation/pages/shift_template_form_page.dart';
 
 class ShiftTemplatesPage extends StatefulWidget {
   const ShiftTemplatesPage({super.key});
@@ -12,188 +18,126 @@ class ShiftTemplatesPage extends StatefulWidget {
 }
 
 class _ShiftTemplatesPageState extends State<ShiftTemplatesPage> {
+  // 1. Keys, Controllers & Local State
+
+  // 2. Lifecycle Methods
   @override
   void initState() {
     super.initState();
-    // Cargamos las plantillas solo una vez al iniciar la vista
-    context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
+    context.read<ShiftTemplatesCubit>().loadShiftTemplates();
   }
 
+  // 3. Build Method
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<ShiftTemplatesBloc, ShiftTemplatesState>(
-        builder: (context, state) {
-          if (state is ShiftTemplatesLoading) {
-            return const Center(child: CircularProgressIndicator());
-          } else if (state is ShiftTemplatesLoaded) {
-            return _buildList(context, state.templates);
-          } else if (state is ShiftTemplatesError) {
-            return Center(child: Text('Error: ${state.message}'));
-          }
-          return const Center(child: Text('Cargando plantillas...'));
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showTemplateForm(context),
-        child: const Icon(Icons.add_alarm),
-      ),
-    );
-  }
-
-  Widget _buildList(BuildContext context, List<ShiftTemplateEntity> templates) {
-    if (templates.isEmpty) {
-      return const Center(
-        child: Text('No hay plantillas configuradas.\nAgregue una para empezar la planificación.', textAlign: TextAlign.center),
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: templates.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final template = templates[index];
-        return Card(
-          child: ListTile(
-            title: Text(template.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('⏰ ${template.startTime} - ${template.endTime}'),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildGenderIcon(template.allowedGender),
-                const SizedBox(width: 8),
-                PopupMenuButton<String>(
-                  onSelected: (value) {
-                    if (value == 'edit') {
-                      _showTemplateForm(context, template: template);
-                    } else if (value == 'delete') {
-                      _showDeleteConfirmation(context, template);
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    const PopupMenuItem(value: 'edit', child: Text('Editar')),
-                    const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-                  ],
-                ),
-              ],
-            ),
-          ),
+    return BlocBuilder<ShiftTemplatesCubit, ShiftTemplatesState>(
+      builder: (context, state) {
+        if (state is ShiftTemplatesLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        } else if (state is ShiftTemplatesLoaded) {
+          final isEmpty = state.templates.isEmpty;
+          return Scaffold(
+            body: isEmpty
+                ? AppEmptyState(
+                    icon: Icons.alarm_off_outlined,
+                    title: 'Sin plantillas',
+                    description: 'Define los horarios de las guardias para automatizar la planificación.',
+                    action: AppButton.primary(
+                      label: 'CREAR PLANTILLA',
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ShiftTemplateFormPage()),
+                      ),
+                    ),
+                  )
+                : _buildList(context, state.templates),
+            floatingActionButton: isEmpty
+                ? null
+                : FloatingActionButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ShiftTemplateFormPage()),
+                    ),
+                    child: const Icon(Icons.add_alarm),
+                  ),
+          );
+        } else if (state is ShiftTemplatesError) {
+          return Scaffold(
+            body: Center(child: Text('Error: ${state.message}')),
+          );
+        }
+        return const Scaffold(
+          body: Center(child: Text('Cargando plantillas...')),
         );
       },
     );
   }
 
-  Widget _buildGenderIcon(AllowedGenderPolicy policy) {
-    IconData icon;
-    Color color;
-    switch (policy) {
-      case AllowedGenderPolicy.soloMujeres:
-        icon = Icons.female;
-        color = Colors.pink;
-        break;
-      case AllowedGenderPolicy.soloHombres:
-        icon = Icons.male;
-        color = Colors.blue;
-        break;
-      case AllowedGenderPolicy.mixto:
-        icon = Icons.wc;
-        color = Colors.purple;
-        break;
-    }
-    return Icon(icon, color: color, size: 20);
-  }
-
+  // 4. Action Handlers & Async Callbacks
   void _showDeleteConfirmation(BuildContext context, ShiftTemplateEntity template) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Eliminar Plantilla'),
-        content: Text('¿Deseas eliminar la plantilla "${template.name}"?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
-          TextButton(
-            onPressed: () {
-              context.read<ShiftTemplatesBloc>().add(RemoveShiftTemplate(template.id));
-              Navigator.pop(dialogContext);
-            },
-            child: const Text('Eliminar', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
+    context.showThemedDialog(
+      title: const Text('Eliminar Plantilla'),
+      content: Text('¿Deseas eliminar la plantilla "${template.name}"? Esta acción no afectará las guardias ya generadas.'),
+      actions: [
+        AppButton.tertiary(
+          label: 'CANCELAR',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.primary(
+          label: 'ELIMINAR',
+          onPressed: () {
+            context.read<ShiftTemplatesCubit>().removeShiftTemplate(template.id);
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 
-  void _showTemplateForm(BuildContext context, {ShiftTemplateEntity? template}) {
-    final bloc = context.read<ShiftTemplatesBloc>();
-    final nameController = TextEditingController(text: template?.name);
-    final startController = TextEditingController(text: template?.startTime ?? '22:00');
-    final endController = TextEditingController(text: template?.endTime ?? '02:00');
-    final quotaController = TextEditingController(text: template?.targetQuota.toString() ?? '3');
-    final minActiveController = TextEditingController(text: template?.minActiveProfiles.toString() ?? '1');
-    AllowedGenderPolicy selectedPolicy = template?.allowedGender ?? AllowedGenderPolicy.mixto;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: Text(template == null ? 'Nueva Plantilla' : 'Editar Plantilla'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(controller: nameController, decoration: const InputDecoration(labelText: 'Nombre (ej: Turno Madrugada)')),
-                Row(
-                  children: [
-                    Expanded(child: TextField(controller: startController, decoration: const InputDecoration(labelText: 'Inicio (HH:mm)'))),
-                    const SizedBox(width: 16),
-                    Expanded(child: TextField(controller: endController, decoration: const InputDecoration(labelText: 'Fin (HH:mm)'))),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Expanded(child: TextField(controller: quotaController, decoration: const InputDecoration(labelText: 'Cupo Total'), keyboardType: TextInputType.number)),
-                    const SizedBox(width: 16),
-                    Expanded(child: TextField(controller: minActiveController, decoration: const InputDecoration(labelText: 'Min. Activos'), keyboardType: TextInputType.number)),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                const Text('Política de Género:', style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButton<AllowedGenderPolicy>(
-                  value: selectedPolicy,
-                  isExpanded: true,
-                  items: AllowedGenderPolicy.values.map((p) => DropdownMenuItem(value: p, child: Text(p.value))).toList(),
-                  onChanged: (v) => setState(() => selectedPolicy = v!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final newTemplate = ShiftTemplateEntity(
-                    id: template?.id ?? const Uuid().v4(),
-                    name: nameController.text,
-                    startTime: startController.text,
-                    endTime: endController.text,
-                    allowedGender: selectedPolicy,
-                    targetQuota: int.tryParse(quotaController.text) ?? 3,
-                    minActiveProfiles: int.tryParse(minActiveController.text) ?? 1,
-                    displayOrder: template?.displayOrder ?? 0,
-                    isActive: true,
-                  );
-                  if (template == null) bloc.add(AddShiftTemplate(newTemplate));
-                  else bloc.add(EditShiftTemplate(newTemplate));
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Guardar'),
-            ),
+  // 5. Helper UI Builders / Sub-widgets
+  Widget _buildList(BuildContext context, List<ShiftTemplateEntity> templates) {
+    return ListView.builder(
+      padding: const EdgeInsets.all(AppSizes.md),
+      itemCount: templates.length,
+      itemBuilder: (context, index) {
+        final template = templates[index];
+        return AppShiftCard(
+          title: template.name,
+          timeRange: '${template.startTime} - ${template.endTime}',
+          details: [
+            'Cupo objetivo: ${template.targetQuota} personas',
+            'Mínimo de activos: ${template.minActiveProfiles}',
           ],
-        ),
-      ),
+          badges: [
+            AppBadge(
+              label: template.allowedGender.value,
+              type: AppBadgeType.info,
+            ),
+            if (!template.isActive)
+              const AppBadge(label: 'INACTIVA', type: AppBadgeType.error)
+            else
+              const AppBadge(label: 'ACTIVA', type: AppBadgeType.success),
+          ],
+          trailing: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined, size: 20),
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => ShiftTemplateFormPage(template: template)),
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                onPressed: () => _showDeleteConfirmation(context, template),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

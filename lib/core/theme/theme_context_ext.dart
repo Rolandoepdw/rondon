@@ -24,7 +24,7 @@ extension ThemeContextExt on BuildContext {
         backgroundColor: AppColors.surfaceContainerHigh,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusLg),
-          side: BorderSide(color: AppColors.outlineVariant.withOpacity(0.2)),
+          side: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.2)),
         ),
         title: DefaultTextStyle(
           style: AppTextStyles.titleMd,

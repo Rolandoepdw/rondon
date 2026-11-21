@@ -33,5 +33,5 @@ abstract class AppColors {
   static const Color onErrorContainer = Color(0xFFFFDAD6);
 
   // Transparent Variants
-  static Color outlineTransparent = primaryContainer.withOpacity(0.3);
+  static Color outlineTransparent = primaryContainer.withValues(alpha: 0.3);
 }

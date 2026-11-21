@@ -21,7 +21,7 @@ void main() {
     name: 'Turno 1',
     startTime: '22:00',
     endTime: '02:00',
-    allowedGender: AllowedGenderPolicy.mixto,
+    allowedGender: AllowedGenderPolicy.mixed,
     targetQuota: 2,
     minActiveProfiles: 1,
     displayOrder: 1,
@@ -31,8 +31,8 @@ void main() {
   final n1 = NeighborEntity(
     id: 'n1',
     fullName: 'Juan Pérez',
-    gender: Gender.masculino,
-    operationalProfile: OperationalProfile.activo,
+    gender: Gender.male,
+    operationalProfile: OperationalProfile.active,
     balance: 0,
     isActive: true,
   );
@@ -40,8 +40,8 @@ void main() {
   final n2 = NeighborEntity(
     id: 'n2',
     fullName: 'María García',
-    gender: Gender.femenino,
-    operationalProfile: OperationalProfile.apoyo,
+    gender: Gender.female,
+    operationalProfile: OperationalProfile.support,
     balance: 0,
     isActive: true,
   );
@@ -60,7 +60,7 @@ void main() {
         neighbor: n1,
         isSubstitute: false,
         attendanceStatus: AttendanceStatus.pendiente,
-        effectiveOperationalProfile: OperationalProfile.activo,
+        effectiveOperationalProfile: OperationalProfile.active,
         balanceImpacted: false,
       ),
       ShiftAssignmentEntity(
@@ -70,7 +70,7 @@ void main() {
         neighbor: n2,
         isSubstitute: true,
         attendanceStatus: AttendanceStatus.pendiente,
-        effectiveOperationalProfile: OperationalProfile.apoyo,
+        effectiveOperationalProfile: OperationalProfile.support,
         balanceImpacted: false,
       ),
     ],

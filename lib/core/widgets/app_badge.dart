@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import '../theme/app_colors.dart';
-import '../theme/app_sizes.dart';
-import '../theme/app_theme.dart';
-import '../theme/theme_context_ext.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
 
 enum AppBadgeType { info, success, warning, error }
 
@@ -23,9 +21,9 @@ class AppBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(AppSizes.radiusSm),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withAlpha(76)),
       ),
       child: Text(
         label.toUpperCase(),
@@ -46,7 +44,6 @@ class AppBadge extends StatelessWidget {
       case AppBadgeType.error:
         return context.colorScheme.error;
       case AppBadgeType.info:
-      default:
         return context.colorScheme.primary;
     }
   }

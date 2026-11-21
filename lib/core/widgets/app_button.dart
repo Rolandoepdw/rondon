@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../theme/app_sizes.dart';
-import '../theme/app_text_styles.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
 
 enum AppButtonType { primary, secondary, tertiary }
 
@@ -63,7 +62,7 @@ class AppButton extends StatelessWidget {
 
   Widget _wrap(Widget child) {
     return SizedBox(
-      height: 48, // Altura estándar del diseño de Stitch
+      height: 48,
       child: child,
     );
   }
@@ -71,8 +70,8 @@ class AppButton extends StatelessWidget {
   Widget _buildContent() {
     if (isLoading) {
       return const SizedBox(
-        width: 20,
-        height: 20,
+        width: AppSizes.lg,
+        height: AppSizes.lg,
         child: CircularProgressIndicator(strokeWidth: 2),
       );
     }
@@ -81,7 +80,7 @@ class AppButton extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 18),
+          Icon(icon, size: AppSizes.lg),
           const SizedBox(width: AppSizes.sm),
           Text(label),
         ],

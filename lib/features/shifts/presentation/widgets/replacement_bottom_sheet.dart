@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shifts_bloc.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/widgets/app_button.dart';
+import 'package:rondon/core/widgets/app_card.dart';
 import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shifts_cubit.dart';
 
 class ReplacementBottomSheet extends StatelessWidget {
   final String shiftId;
@@ -15,27 +19,31 @@ class ReplacementBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Iniciamos la carga de candidatos inmediatamente
-    context.read<ShiftsBloc>().add(LoadReplacementCandidates(
+    context.read<ShiftsCubit>().loadReplacementCandidates(
       shiftId: shiftId,
       originalNeighborId: originalNeighbor.id,
-    ));
+    );
 
     return Container(
-      padding: const EdgeInsets.all(24),
-      height: MediaQuery.of(context).size.height * 0.7,
+      padding: const EdgeInsets.all(AppSizes.lg),
+      height: MediaQuery.of(context).size.height * 0.75,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Reemplazar a: ${originalNeighbor.fullName}',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+            'REEMPLAZAR A: ${originalNeighbor.fullName.toUpperCase()}',
+            style: context.design.labelCaps,
           ),
-          const SizedBox(height: 8),
-          const Text('Candidatos recomendados por equidad y descanso:'),
-          const Divider(),
+          const SizedBox(height: AppSizes.md),
+          Text(
+            'Candidatos recomendados por equidad y descanso:',
+            style: context.textTheme.bodySmall,
+          ),
+          const SizedBox(height: AppSizes.md),
+          const Divider(height: 1),
+          const SizedBox(height: AppSizes.md),
           Expanded(
-            child: BlocBuilder<ShiftsBloc, ShiftsState>(
+            child: BlocBuilder<ShiftsCubit, ShiftsState>(
               builder: (context, state) {
                 if (state is ShiftsLoading) {
                   return const Center(child: CircularProgressIndicator());
@@ -47,19 +55,27 @@ class ReplacementBottomSheet extends StatelessWidget {
                     itemCount: state.candidates.length,
                     itemBuilder: (context, index) {
                       final candidate = state.candidates[index];
-                      return Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: candidate.neighbor.operationalProfile == OperationalProfile.activo 
-                                ? Colors.green.shade50 
-                                : Colors.orange.shade50,
-                            child: Text(candidate.neighbor.fullName[0]),
-                          ),
-                          title: Text(candidate.neighbor.fullName),
-                          subtitle: Text('Balance: ${candidate.neighbor.balance} | Perfil: ${candidate.effectiveProfile.value}'),
-                          trailing: FilledButton.tonal(
-                            onPressed: () => _confirmReplacement(context, candidate.neighbor, candidate.effectiveProfile),
-                            child: const Text('Asignar'),
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: AppSizes.sm),
+                        child: AppCard(
+                          padding: const EdgeInsets.symmetric(horizontal: AppSizes.md, vertical: AppSizes.sm),
+                          child: ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: CircleAvatar(
+                              backgroundColor: candidate.neighbor.operationalProfile == OperationalProfile.active
+                                  ? context.colorScheme.primaryContainer
+                                  : context.colorScheme.surfaceContainerHighest,
+                              child: Text(candidate.neighbor.fullName[0], style: TextStyle(color: context.colorScheme.onSurface)),
+                            ),
+                            title: Text(candidate.neighbor.fullName, style: context.textTheme.bodyLarge),
+                            subtitle: Text(
+                              'Bal: ${candidate.neighbor.balance} • ${candidate.effectiveProfile.value}',
+                              style: context.textTheme.bodySmall,
+                            ),
+                            trailing: AppButton.tertiary(
+                              label: 'ASIGNAR',
+                              onPressed: () => _confirmReplacement(context, candidate.neighbor, candidate.effectiveProfile),
+                            ),
                           ),
                         ),
                       );
@@ -72,46 +88,43 @@ class ReplacementBottomSheet extends StatelessWidget {
               },
             ),
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: OutlinedButton.icon(
-              onPressed: () => _confirmReplacement(context, null, OperationalProfile.apoyo), // Caso déficit
-              icon: const Icon(Icons.person_off_outlined),
-              label: const Text('Dejar turno con déficit (Sin reemplazo)'),
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.red),
-            ),
+          const SizedBox(height: AppSizes.md),
+          AppButton.secondary(
+            label: 'DEJAR TURNO CON DÉFICIT',
+            icon: Icons.person_off_outlined,
+            onPressed: () => _confirmReplacement(context, null, OperationalProfile.support),
           ),
+          const SizedBox(height: AppSizes.xl),
         ],
       ),
     );
   }
 
   void _confirmReplacement(BuildContext context, NeighborEntity? substitute, OperationalProfile effectiveProfile) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Confirmar Cambio'),
-        content: Text(substitute == null 
-            ? '¿Seguro que deseas dejar la vacante sin cubrir? El turno operará con déficit.' 
-            : '¿Confirmas la asignación de ${substitute.fullName} como refuerzo?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              context.read<ShiftsBloc>().add(PerformSubstitution(
-                shiftId: shiftId,
-                originalNeighborId: originalNeighbor.id,
-                substituteNeighborId: substitute?.id,
-                effectiveProfile: effectiveProfile,
-              ));
-              Navigator.pop(ctx); // Cierra diálogo
-              Navigator.pop(context); // Cierra BottomSheet
-            },
-            child: const Text('Confirmar'),
-          ),
-        ],
-      ),
+    context.showThemedDialog(
+      title: const Text('Confirmar Cambio'),
+      content: Text(substitute == null
+          ? '¿Seguro que deseas dejar la vacante sin cubrir? El turno operará con déficit.'
+          : '¿Confirmas la asignación de ${substitute.fullName} como refuerzo para esta guardia?'),
+      actions: [
+        AppButton.tertiary(
+          label: 'CANCELAR',
+          onPressed: () => Navigator.pop(context),
+        ),
+        AppButton.primary(
+          label: 'CONFIRMAR',
+          onPressed: () {
+            context.read<ShiftsCubit>().performSubstitution(
+              shiftId: shiftId,
+              originalNeighborId: originalNeighbor.id,
+              substituteNeighborId: substitute?.id,
+              effectiveProfile: effectiveProfile,
+            );
+            Navigator.pop(context); // Cierra diálogo
+            Navigator.pop(context); // Cierra BottomSheet
+          },
+        ),
+      ],
     );
   }
 }

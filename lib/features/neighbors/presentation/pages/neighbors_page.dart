@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/neighbors_bloc.dart';
-import 'package:rondon/features/neighbors/presentation/bloc/base_squads_bloc.dart';
-import 'package:rondon/features/shifts/presentation/bloc/shift_templates_bloc.dart';
-import 'package:rondon/features/neighbors/domain/entities/neighbor.dart';
+import 'package:rondon/core/theme/app_sizes.dart';
+import 'package:rondon/core/theme/theme_context_ext.dart';
+import 'package:rondon/core/widgets/app_button.dart';
+import 'package:rondon/core/widgets/app_card.dart';
+import 'package:rondon/core/widgets/app_empty_state.dart';
+import 'package:rondon/core/widgets/app_neighbor_tile.dart';
 import 'package:rondon/features/neighbors/domain/entities/base_squad.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/base_squads_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/cubit/neighbors_cubit.dart';
+import 'package:rondon/features/neighbors/presentation/pages/base_squad_form_page.dart';
 import 'package:rondon/features/neighbors/presentation/pages/neighbor_detail_page.dart';
+import 'package:rondon/features/neighbors/presentation/pages/neighbor_form_page.dart';
 import 'package:rondon/features/settings/presentation/pages/shift_templates_page.dart';
-import 'package:uuid/uuid.dart';
+import 'package:rondon/features/shifts/presentation/cubit/shift_templates_cubit.dart';
 
 class NeighborsPage extends StatefulWidget {
   const NeighborsPage({super.key});
@@ -17,27 +23,36 @@ class NeighborsPage extends StatefulWidget {
 }
 
 class _NeighborsPageState extends State<NeighborsPage> {
+  // 1. Keys, Controllers & Local State
+
+  // 2. Lifecycle Methods
   @override
   void initState() {
     super.initState();
-    context.read<NeighborsBloc>().add(LoadNeighbors());
-    context.read<BaseSquadsBloc>().add(LoadBaseSquads());
-    context.read<ShiftTemplatesBloc>().add(LoadShiftTemplates());
+    context.read<NeighborsCubit>().loadNeighbors();
+    context.read<BaseSquadsCubit>().loadBaseSquads();
+    context.read<ShiftTemplatesCubit>().loadShiftTemplates();
   }
 
+  // 3. Build Method
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 3,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Comunidad y Turnos'),
+          title: Row(
+            children: [
+              Image.asset('assets/images/logo.png', width: AppSizes.xl, height: AppSizes.xl),
+              const SizedBox(width: AppSizes.sm),
+              const Text('Gestión'),
+            ],
+          ),
           bottom: const TabBar(
-            isScrollable: true,
             tabs: [
-              Tab(icon: Icon(Icons.person), text: 'Vecinos'),
-              Tab(icon: Icon(Icons.groups), text: 'Cuadrillas'),
-              Tab(icon: Icon(Icons.access_time), text: 'Plantillas'),
+              Tab(text: 'Vecinos'),
+              Tab(text: 'Cuadrillas'),
+              Tab(text: 'Plantillas'),
             ],
           ),
         ),
@@ -51,6 +66,10 @@ class _NeighborsPageState extends State<NeighborsPage> {
       ),
     );
   }
+
+  // 4. Action Handlers & Async Callbacks
+
+  // 5. Helper UI Builders / Sub-widgets
 }
 
 class _NeighborsListTab extends StatelessWidget {
@@ -58,166 +77,59 @@ class _NeighborsListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<NeighborsBloc, NeighborsState>(
+    return BlocBuilder<NeighborsCubit, NeighborsState>(
       builder: (context, state) {
         if (state.isLoading && state.neighbors.isEmpty) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state.errorMessage != null && state.neighbors.isEmpty) {
-          return Center(child: Text('Error: ${state.errorMessage}'));
         }
-        return _buildList(context, state.neighbors);
+
+        final isEmpty = state.neighbors.isEmpty;
+
+        return Scaffold(
+          body: isEmpty
+              ? AppEmptyState(
+                  icon: Icons.person_off_outlined,
+                  title: 'No hay vecinos',
+                  description: 'Comienza agregando a los miembros de tu comunidad.',
+                  action: AppButton.primary(
+                    label: 'AGREGAR VECINO',
+                    icon: Icons.person_add,
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const NeighborFormPage()),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.all(AppSizes.md),
+                  itemCount: state.neighbors.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: AppSizes.sm),
+                  itemBuilder: (context, index) {
+                    final neighbor = state.neighbors[index];
+                    return AppNeighborTile(
+                      neighbor: neighbor,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NeighborDetailPage(neighborId: neighbor.id),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+          floatingActionButton: isEmpty
+              ? null
+              : FloatingActionButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const NeighborFormPage()),
+                  ),
+                  child: const Icon(Icons.person_add),
+                ),
+        );
       },
-    );
-  }
-
-  Widget _buildList(BuildContext context, List<NeighborEntity> neighbors) {
-    if (neighbors.isEmpty) {
-      return Scaffold(
-        body: const Center(child: Text('Aún no hay vecinos registrados.')),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => _showNeighborForm(context),
-          child: const Icon(Icons.person_add),
-        ),
-      );
-    }
-
-    return Scaffold(
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: neighbors.length,
-        separatorBuilder: (context, index) => const Divider(),
-        itemBuilder: (context, index) {
-          final neighbor = neighbors[index];
-          return ListTile(
-            leading: CircleAvatar(
-              backgroundColor: neighbor.operationalProfile == OperationalProfile.activo 
-                  ? Colors.green.shade100 
-                  : Colors.orange.shade100,
-              child: Icon(
-                neighbor.gender == Gender.masculino ? Icons.male : Icons.female,
-                color: neighbor.operationalProfile == OperationalProfile.activo 
-                    ? Colors.green 
-                    : Colors.orange,
-              ),
-            ),
-            title: Text(neighbor.fullName),
-            subtitle: Text(neighbor.phone ?? 'Sin teléfono'),
-            trailing: _buildBalanceChip(neighbor.balance),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => NeighborDetailPage(neighborId: neighbor.id),
-                ),
-              );
-            },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showNeighborForm(context),
-        child: const Icon(Icons.person_add),
-      ),
-    );
-  }
-
-  Widget _buildBalanceChip(int balance) {
-    Color color = Colors.grey;
-    if (balance > 0) color = Colors.green;
-    if (balance < 0) color = Colors.red;
-
-    return Chip(
-      label: Text(
-        balance.toString(),
-        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 10),
-      ),
-      backgroundColor: color,
-      padding: EdgeInsets.zero,
-      visualDensity: VisualDensity.compact,
-    );
-  }
-
-  void _showNeighborForm(BuildContext context) {
-    final neighborsBloc = context.read<NeighborsBloc>();
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-    Gender selectedGender = Gender.masculino;
-    OperationalProfile selectedProfile = OperationalProfile.activo;
-
-    showDialog(
-      context: context,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Nuevo Vecino'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(labelText: 'Nombre Completo'),
-                ),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'Teléfono'),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 16),
-                const Text('Género:', style: TextStyle(fontWeight: FontWeight.bold)),
-                Row(
-                  children: [
-                    Radio<Gender>(
-                      value: Gender.masculino,
-                      groupValue: selectedGender,
-                      onChanged: (v) => setState(() => selectedGender = v!),
-                    ),
-                    const Text('M'),
-                    Radio<Gender>(
-                      value: Gender.femenino,
-                      groupValue: selectedGender,
-                      onChanged: (v) => setState(() => selectedGender = v!),
-                    ),
-                    const Text('F'),
-                  ],
-                ),
-                const Text('Perfil Operativo:', style: TextStyle(fontWeight: FontWeight.bold)),
-                DropdownButton<OperationalProfile>(
-                  value: selectedProfile,
-                  isExpanded: true,
-                  items: OperationalProfile.values.map((p) {
-                    return DropdownMenuItem(value: p, child: Text(p.value));
-                  }).toList(),
-                  onChanged: (v) => setState(() => selectedProfile = v!),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancelar'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (nameController.text.isNotEmpty) {
-                  final newNeighbor = NeighborEntity(
-                    id: const Uuid().v4(),
-                    fullName: nameController.text,
-                    phone: phoneController.text,
-                    gender: selectedGender,
-                    operationalProfile: selectedProfile,
-                    balance: 0,
-                    isActive: true,
-                  );
-                  neighborsBloc.add(AddNeighbor(newNeighbor));
-                  Navigator.pop(dialogContext);
-                }
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
@@ -227,95 +139,109 @@ class _BaseSquadsListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BaseSquadsBloc, BaseSquadsState>(
+    return BlocBuilder<BaseSquadsCubit, BaseSquadsState>(
       builder: (context, state) {
         if (state is BaseSquadsLoading) {
           return const Center(child: CircularProgressIndicator());
-        } else if (state is BaseSquadsLoaded) {
-          return _buildSquadsList(context, state.squads);
-        } else if (state is BaseSquadsError) {
-          return Center(child: Text('Error: ${state.message}'));
         }
-        return const Center(child: Text('Cargando cuadrillas...'));
+
+        if (state is BaseSquadsLoaded) {
+          final isEmpty = state.squads.isEmpty;
+
+          return Scaffold(
+            body: isEmpty
+                ? AppEmptyState(
+                    icon: Icons.groups_2_outlined,
+                    title: 'No hay cuadrillas',
+                    description: 'Organiza a tus vecinos en grupos para facilitar la rotación.',
+                    action: AppButton.primary(
+                      label: 'CREAR CUADRILLA',
+                      icon: Icons.group_add,
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const BaseSquadFormPage()),
+                      ),
+                    ),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.all(AppSizes.md),
+                    itemCount: state.squads.length,
+                    separatorBuilder: (context, index) => const SizedBox(height: AppSizes.sm),
+                    itemBuilder: (context, index) {
+                      final squad = state.squads[index];
+                      return AppCard(
+                        padding: EdgeInsets.zero,
+                        child: ExpansionTile(
+                          shape: const RoundedRectangleBorder(side: BorderSide.none),
+                          collapsedShape: const RoundedRectangleBorder(side: BorderSide.none),
+                          title: Text(squad.name, style: context.textTheme.titleMedium),
+                          subtitle: Text('${squad.members.length} integrantes', style: context.design.labelCaps),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 20),
+                                onPressed: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(builder: (_) => BaseSquadFormPage(squad: squad)),
+                                ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete_outline, size: 20, color: Colors.redAccent),
+                                onPressed: () => _showDeleteConfirmation(context, squad),
+                              ),
+                            ],
+                          ),
+                          children: squad.members.map((m) => ListTile(
+                            dense: true,
+                            leading: Icon(Icons.person_outline, size: 16, color: context.colorScheme.primary),
+                            title: Text(m.fullName, style: context.textTheme.bodyLarge),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => NeighborDetailPage(neighborId: m.id),
+                                ),
+                              );
+                            },
+                          )).toList(),
+                        ),
+                      );
+                    },
+                  ),
+            floatingActionButton: isEmpty
+                ? null
+                : FloatingActionButton(
+                    onPressed: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BaseSquadFormPage()),
+                    ),
+                    child: const Icon(Icons.group_add),
+                  ),
+          );
+        }
+        return const SizedBox();
       },
     );
   }
 
-  Widget _buildSquadsList(BuildContext context, List<BaseSquadEntity> squads) {
-    return Scaffold(
-      body: squads.isEmpty
-          ? const Center(child: Text('No hay cuadrillas configuradas.'))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: squads.length,
-              itemBuilder: (context, index) {
-                final squad = squads[index];
-                return Card(
-                  child: ExpansionTile(
-                    title: Text(squad.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${squad.members.length} integrantes'),
-                    trailing: PopupMenuButton<String>(
-                      onSelected: (val) {
-                        if (val == 'delete') {
-                          context.read<BaseSquadsBloc>().add(RemoveBaseSquad(squad.id));
-                        }
-                      },
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-                      ],
-                    ),
-                    children: squad.members.map((m) => ListTile(
-                      dense: true,
-                      leading: const Icon(Icons.person_outline, size: 16),
-                      title: Text(m.fullName),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => NeighborDetailPage(neighborId: m.id),
-                          ),
-                        );
-                      },
-                    )).toList(),
-                  ),
-                );
-              },
-            ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showSquadForm(context),
-        child: const Icon(Icons.group_add),
-      ),
-    );
-  }
-
-  void _showSquadForm(BuildContext context) {
-    final bloc = context.read<BaseSquadsBloc>();
-    final nameController = TextEditingController();
-    
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Nueva Cuadrilla'),
-        content: TextField(
-          controller: nameController,
-          decoration: const InputDecoration(labelText: 'Nombre de la Cuadrilla'),
+  void _showDeleteConfirmation(BuildContext context, BaseSquadEntity squad) {
+    context.showThemedDialog(
+      title: const Text('Eliminar Cuadrilla'),
+      content: Text('¿Estás seguro de que deseas eliminar la cuadrilla "${squad.name}"?'),
+      actions: [
+        AppButton.tertiary(
+          label: 'CANCELAR',
+          onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancelar')),
-          FilledButton(
-            onPressed: () {
-              if (nameController.text.isNotEmpty) {
-                bloc.add(AddBaseSquad(BaseSquadEntity(
-                  id: const Uuid().v4(),
-                  name: nameController.text,
-                )));
-                Navigator.pop(dialogContext);
-              }
-            },
-            child: const Text('Crear'),
-          ),
-        ],
-      ),
+        AppButton.primary(
+          label: 'ELIMINAR',
+          onPressed: () {
+            context.read<BaseSquadsCubit>().removeBaseSquad(squad.id);
+            Navigator.pop(context);
+          },
+        ),
+      ],
     );
   }
 }

@@ -25,7 +25,7 @@ abstract class AppTextStyles {
 
   static TextStyle get titleMd => const TextStyle(
         fontFamily: _fontFamily,
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: FontWeight.w600,
         height: 28 / 20,
         color: AppColors.onSurface,
